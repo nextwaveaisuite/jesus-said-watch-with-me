@@ -185,6 +185,11 @@
   </div>
 
   <script>
+    // ================== CONFIG (as requested) ==================
+    const INITIAL_MIN = 10;
+    const INITIAL_MAX = 15;
+    const MORE_COUNT  = 15;
+
     // ================== LEVELS & DURATIONS ==================
     const LEVELS = [
       { id:1, name:'Level 1', targetMin:15, verseMin:2, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Petition'] },
@@ -192,7 +197,7 @@
       { id:3, name:'Level 3', targetMin:45, verseMin:4, verseMax:8, sections:['Adoration','Thanksgiving','Intercession','Warfare','Word Meditation','Declarations','Petition'] },
       { id:4, name:'Level 4', targetMin:60, verseMin:6, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
-    function chunkMin(level){ return [0,3,5,5,6][level]; } // 10 paras per chunk
+    function chunkMin(level){ return [0,3,5,5,6][level]; } // per “More Prayer” chunk duration
 
     // Default tones by level:
     const DEFAULT_TONE_BY_LEVEL = { 1:'gentle', 2:'thanksgiving', 3:'warfare', 4:'intercession' };
@@ -213,12 +218,12 @@
     const TEST_SECONDS_PER_MIN = 5;
 
     // ================== STORAGE ==================
-    const STORAGE_KEY = 'watchWithMe.progress.v14';
+    const STORAGE_KEY = 'watchWithMe.progress.v15';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ================== SCRIPTURE POOLS ==================
+    // ================== SCRIPTURE POOLS (KJV snippets) ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -343,7 +348,8 @@
     function isNearDuplicate(a,b){ return jac(a,b)>=0.5 || lead2(a)===lead2(b); }
     function dedupeParagraphs(arr){
       const out=[]; const usedStarts=new Set();
-      for(const p of arr){
+      for(const p0 of arr){
+        let p = p0;
         if(!p) continue;
         if(out.some(x=>isNearDuplicate(x,p))) continue;
         let lb=lead2(p);
@@ -411,82 +417,6 @@
       ]
     };
 
-    // UTILS
-    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
-    function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
-    function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
-    function targetSecondsFor(levelId){ return secondsForMinutes(LEVELS.find(l=>l.id===levelId).targetMin); }
-    function fmt(sec){ const m=Math.floor(sec/60), s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
-
-    function tokenize(s){
-      return (s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ')
-        .split(/\s+/).filter(t=>t && t.length>2 && !['the','and','for','with','this','that','have','from','your','you','our','her','him','his','she','they','them','are','was','will','not'].includes(t));
-    }
-    function extractContext(text){
-      const rels=['me','my','mother','mom','father','dad','wife','husband','son','daughter','child','children','friend','brother','sister','boss','coworker','niece','nephew','grandma','grandpa'];
-      const words=(text||'').split(/\s+/); let target=null,name=null;
-      for(let i=0;i<words.length;i++){
-        const w=words[i].toLowerCase().replace(/[^a-z]/g,'');
-        if(rels.includes(w)){ target=w; const next=words[i+1]; if(next && /^[A-Z][a-z'-]+$/.test(next)) name=next; break; }
-      }
-      return { targetText: target ? (name? `${target} ${name}`:target) : null };
-    }
-    function detectTopics(text){
-      const q=(text||'').toLowerCase(), scores={};
-      for(const [topic,words] of Object.entries(KEYWORDS)){ scores[topic]=words.reduce((a,w)=>a+(q.includes(w)?1:0),0); }
-      if(q.includes('heal')) scores.healing=(scores.healing||0)+1;
-      if(q.includes('anx')) scores.anxiety=(scores.anxiety||0)+1;
-      const ranked=Object.entries(scores).filter(([,s])=>s>0).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
-      return ranked.length? ranked.slice(0,2):['guidance'];
-    }
-    function pickVerses(topics, min, max, query, already=new Set()){
-      const pools = topics.flatMap(t=>VERSES[t]||[]);
-      const base  = pools.length? pools : VERSES['guidance'];
-      const tokens= tokenize(query);
-      const scored= base.map(v=>{
-        const t=(v.text+' '+v.ref).toLowerCase();
-        const score=tokens.reduce((acc,tk)=>acc+(t.includes(tk)?1:0),0);
-        return {v,score};
-      }).sort((a,b)=>b.score-a.score);
-      const targetN = Math.min(base.length, Math.max(min, Math.min(max, base.length)));
-      const out=[];
-      for(const it of scored){
-        if(out.length>=targetN) break;
-        if(!already.has(it.v.ref)){ out.push(it.v); already.add(it.v.ref); }
-      }
-      return out;
-    }
-
-    // ===== LOCAL GENERATORS (fallback/offline) =====
-    const deepLines = [
-      'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
-      'Strengthen my inner being by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
-      'I surrender the parts of me that resist You. Form Christ in me—thought by thought, breath by breath.',
-      'Let Your love cast out fear. Fill this place with Your presence until my heart rests in Your promises.',
-      'As I wait on You, renew my strength. Lift my eyes above the storm to the One who speaks, “Peace, be still.”',
-      'Order my steps and confirm Your way with wisdom from above. Make my path straight and my heart steadfast.',
-      'Keep my heart tender and my spirit steadfast; make me quick to hear and quick to obey.',
-      'Make me a peacemaker and a witness of Christ—salt and light wherever I go.',
-      'Your grace is sufficient; Your strength is made perfect in weakness. I boast in You alone.',
-      'Establish my thoughts in Your truth. Let the words of my mouth and the meditation of my heart be acceptable to You.'
-    ];
-    const topicFlavor = {
-      healing:'Release Your healing virtue; make whole in body, soul, and spirit.',
-      anxiety:'Speak Your perfect peace over every racing thought and heavy breath.',
-      peace:'Let the peace of Christ rule in my heart and every room I enter.',
-      guidance:'Illuminate the next step and anchor me in Your counsel.',
-      provision:'Provide according to Your riches in glory and teach holy contentment.',
-      employment:'Establish the work of my hands and grant favor with those I serve.',
-      forgiveness:'Wash and restore me, that I may walk in a clean heart.',
-      protection:'Be a hedge around me; guard my going out and my coming in.',
-      grief:'Comfort me in sorrow and turn mourning into songs of hope.',
-      spiritual_warfare:'Disarm every scheme of the enemy and let truth prevail.',
-      salvation:'Draw hearts to Jesus; open the door of faith and breathe new life.',
-      purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
-      wisdom:'Give me a wise and understanding heart that delights in Your counsel.',
-      favor:'Surround me with favor as with a shield; open doors no one can shut.'
-    };
-
     // ====== AI GENERATION (optional) ======
     async function aiGenerateParagraphs({query, level, topics, previousText, tone, count=10}) {
       try {
@@ -533,7 +463,7 @@
       const L=LEVELS.find(x=>x.id===currentLevel);
       const targ=targetSecondsFor(currentLevel);
       levelProgress.textContent = cumulativeSeconds>0 ? `Progress this level: ${fmt(cumulativeSeconds)} / ${fmt(targ)}` : '';
-      journeyEl.textContent = `Current: ${L.name} — target ${L.targetMin} minutes. Each chunk adds 10 new prayer lines.`;
+      journeyEl.textContent = `Current: ${L.name} — target ${L.targetMin} minutes. Initial ${INITIAL_MIN}-${INITIAL_MAX} lines, then +${MORE_COUNT} per “More Prayer”.`;
     }
     function escapeHTML(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function renderPrayerHTML(sess){
@@ -610,74 +540,111 @@
     }
     toneEl.addEventListener('change',()=> setTone(toneEl.value));
 
-    // ===== Local paragraph builders (non-AI) =====
-    function introParagraphs(level, topics, query, ctx, toneKey, sess){
-      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
-      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
-      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
-      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
-      const adoration = [
-        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
-        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
-        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
-      ];
-      const thanks = [
-        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
-        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.'
-      ];
+    // ===== LOCAL GENERATORS (offline fallback) =====
+    const deepLines = [
+      'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
+      'Strengthen my inner being by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
+      'I surrender the parts of me that resist You. Form Christ in me—thought by thought, breath by breath.',
+      'Let Your love cast out fear. Fill this place with Your presence until my heart rests in Your promises.',
+      'As I wait on You, renew my strength. Lift my eyes above the storm to the One who speaks, “Peace, be still.”',
+      'Order my steps and confirm Your way with wisdom from above. Make my path straight and my heart steadfast.',
+      'Keep my heart tender and my spirit steadfast; make me quick to hear and quick to obey.',
+      'Make me a peacemaker and a witness of Christ—salt and light wherever I go.',
+      'Your grace is sufficient; Your strength is made perfect in weakness. I boast in You alone.',
+      'Establish my thoughts in Your truth. Let the words of my mouth and the meditation of my heart be acceptable to You.'
+    ];
+    const topicFlavor = {
+      healing:'Release Your healing virtue; make whole in body, soul, and spirit.',
+      anxiety:'Speak Your perfect peace over every racing thought and heavy breath.',
+      peace:'Let the peace of Christ rule in my heart and every room I enter.',
+      guidance:'Illuminate the next step and anchor me in Your counsel.',
+      provision:'Provide according to Your riches in glory and teach holy contentment.',
+      employment:'Establish the work of my hands and grant favor with those I serve.',
+      forgiveness:'Wash and restore me, that I may walk in a clean heart.',
+      protection:'Be a hedge around me; guard my going out and my coming in.',
+      grief:'Comfort me in sorrow and turn mourning into songs of hope.',
+      spiritual_warfare:'Disarm every scheme of the enemy and let truth prevail.',
+      salvation:'Draw hearts to Jesus; open the door of faith and breathe new life.',
+      purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
+      wisdom:'Give me a wise and understanding heart that delights in Your counsel.',
+      favor:'Surround me with favor as with a shield; open doors no one can shut.'
+    };
+    const toneBoost = {
+      gentle:'Let my words be gentle and full of peace.',
+      intercession:'Hear our cry for others; let compassion move swiftly.',
+      warfare:'In Jesus’ authority I resist the enemy; let every stronghold fall.',
+      thanksgiving:'With gratitude, I recount Your goodness and faithfulness.',
+      lament:'You are near to the brokenhearted; receive my honest tears and comfort me.',
+      celebration:'My heart rejoices; magnify the Lord with me!',
+      confession:'Search me and cleanse me; create in me a clean heart, O God.',
+      guidance:'Grant clarity and a wise, understanding heart.'
+    };
 
-      const arr = [];
-      arr.push(`${opener} ${adoration[0]}`);
-      if(level>1) arr.push(adoration[1]);
-      if(level>2) arr.push(adoration[2]);
-      arr.push(thanks[0]);
-      if(level>2) arr.push(thanks[1]);
-
-      // tone line (pick ONCE per session for intro)
-      const tlines = toneLines[toneKey] || [];
-      if(tlines.length){
-        const candidate = tlines.find(l=>!sess.usedPhrases.has(norm(l)));
-        if(candidate){ sess.usedPhrases.add(norm(candidate)); arr.push(candidate); }
-      }
-
-      arr.push(`I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`);
-
-      if(toneKey==='warfare' && level>=3){
-        arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
-      }
-      if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
-      return dedupeParagraphs(arr);
-    }
-
-    function generateParagraphs(count, level, topics, toneKey, sess){
+    function generateParagraphs(count, level, topics, toneKey){
       const result = [];
       for(let i=0;i<count;i++){
         let line = deepLines[Math.floor(Math.random()*deepLines.length)];
         if(Math.random()<0.55 + (level*0.05)){
           const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
           if(flavors.length && Math.random()<0.7){
-            const pick = flavors[Math.floor(Math.random()*flavors.length)];
-            if(!sess.usedPhrases.has(norm(pick))){
-              line += ' ' + pick;
-              sess.usedPhrases.add(norm(pick));
-            }
+            line += ' ' + flavors[Math.floor(Math.random()*flavors.length)];
           }
         }
-        // sprinkle one tone line occasionally, but never repeat the same
-        const tlines = toneLines[toneKey] || [];
-        if(tlines.length && Math.random()<0.35){
-          const cand = tlines.find(l=>!sess.usedPhrases.has(norm(l)));
-          if(cand){
-            line += ' ' + cand;
-            sess.usedPhrases.add(norm(cand));
-          }
+        if(toneBoost[toneKey] && Math.random()<0.35){
+          line += ' ' + toneBoost[toneKey];
         }
         result.push(line);
       }
       return dedupeParagraphs(result);
     }
 
-    // ===== EVENTS =====
+    // ===== UTIL helpers =====
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+    function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
+    function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
+    function targetSecondsFor(levelId){ return secondsForMinutes(LEVELS.find(l=>l.id===levelId).targetMin); }
+    function fmt(sec){ const m=Math.floor(sec/60), s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+
+    function tokenize(s){
+      return (s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ')
+        .split(/\s+/).filter(t=>t && t.length>2 && !['the','and','for','with','this','that','have','from','your','you','our','her','him','his','she','they','them','are','was','will','not'].includes(t));
+    }
+    function extractContext(text){
+      const rels=['me','my','mother','mom','father','dad','wife','husband','son','daughter','child','children','friend','brother','sister','boss','coworker','niece','nephew','grandma','grandpa'];
+      const words=(text||'').split(/\s+/); let target=null,name=null;
+      for(let i=0;i<words.length;i++){
+        const w=words[i].toLowerCase().replace(/[^a-z]/g,'');
+        if(rels.includes(w)){ target=w; const next=words[i+1]; if(next && /^[A-Z][a-z'-]+$/.test(next)) name=next; break; }
+      }
+      return { targetText: target ? (name? `${target} ${name}`:target) : null };
+    }
+    function detectTopics(text){
+      const q=(text||'').toLowerCase(), scores={};
+      for(const [topic,words] of Object.entries(KEYWORDS)){ scores[topic]=words.reduce((a,w)=>a+(q.includes(w)?1:0),0); }
+      if(q.includes('heal')) scores.healing=(scores.healing||0)+1;
+      if(q.includes('anx')) scores.anxiety=(scores.anxiety||0)+1;
+      const ranked=Object.entries(scores).filter(([,s])=>s>0).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+      return ranked.length? ranked.slice(0,2):['guidance'];
+    }
+    function pickVerses(topics, min, max, query, already=new Set()){
+      const pools = topics.flatMap(t=>VERSES[t]||[]);
+      const base  = pools.length? pools : VERSES['guidance'];
+      const tokens= tokenize(query);
+      const scored= base.map(v=>{
+        const t=(v.text+' '+v.ref).toLowerCase();
+        const score=tokens.reduce((acc,tk)=>acc+(t.includes(tk)?1:0),0);
+        return {v,score};
+      }).sort((a,b)=>b.score-a.score);
+      const targetN = Math.min(base.length, Math.max(min, Math.min(max, base.length)));
+      const out=[];
+      for(const it of scored){
+        if(out.length>=targetN) break;
+        if(!already.has(it.v.ref)){ out.push(it.v); already.add(it.v.ref); }
+      }
+      return out;
+    }
+
+    // ===== Events =====
     testMode.addEventListener('change',()=>{progress.testMode = testMode.checked; save(); updateJourney();});
 
     async function buildFirstBlock(){
@@ -690,7 +657,7 @@
       const selectedRefs = new Set();
       const verses = pickVerses(topics, L.verseMin, L.verseMax, query, selectedRefs);
 
-      // session container
+      // new session
       session = {
         level: currentLevel,
         topics, ctx, query, tone,
@@ -700,11 +667,13 @@
         usedPhrases: new Set()
       };
 
+      // count: 10–15
+      const initialCount = Math.floor(Math.random()*(INITIAL_MAX-INITIAL_MIN+1))+INITIAL_MIN;
+
       let firstParas = [];
       if(document.getElementById('aiMode').checked){
-        const ai = await aiGenerateParagraphs({query, level: currentLevel, topics, previousText: '', tone, count: 10});
+        const ai = await aiGenerateParagraphs({query, level: currentLevel, topics, previousText: '', tone, count: initialCount});
         firstParas = ai.paragraphs || [];
-        // client-side cleanup/anti-dup (final pass)
         firstParas = dedupeParagraphs(firstParas);
         if(Array.isArray(ai.scriptures)){
           ai.scriptures.forEach(s=>{
@@ -715,10 +684,7 @@
           });
         }
       }else{
-        const block0 = introParagraphs(currentLevel, topics, query, ctx, tone, session);
-        const needed = Math.max(0, 10 - block0.length);
-        const extras = generateParagraphs(needed, currentLevel, topics, tone, session);
-        firstParas = dedupeParagraphs(block0.concat(extras));
+        firstParas = generateParagraphs(initialCount, currentLevel, topics, tone);
       }
 
       session.blocks.push({ paras:firstParas });
@@ -748,7 +714,7 @@
           topics: session.topics,
           previousText,
           tone: session.tone,
-          count: 10
+          count: MORE_COUNT
         });
         newParas = ai.paragraphs || [];
         // De-dup vs. previous blocks too
@@ -766,7 +732,7 @@
           }
         }
       }else{
-        newParas = generateParagraphs(10, session.level, session.topics, session.tone, session);
+        newParas = generateParagraphs(MORE_COUNT, session.level, session.topics, session.tone);
         const allExisting = session.blocks.flatMap(b=>b.paras);
         newParas = newParas.filter(p => !allExisting.some(ep => isNearDuplicate(ep, p)));
         newParas = dedupeParagraphs(newParas);
@@ -785,7 +751,13 @@
       startChunkForLevel(session.level);
     });
 
-    // BOOT
+    // ===== BOOT =====
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+    function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
+    function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
+    function targetSecondsFor(levelId){ return secondsForMinutes(LEVELS.find(l=>l.id===levelId).targetMin); }
+    function fmt(sec){ const m=Math.floor(sec/60), s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+
     function boot(){
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
