@@ -23,35 +23,46 @@
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     @media(min-width:860px){.grid{grid-template-columns:2fr 1fr}}
 
-    .card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0));border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(6px);border-radius:16px;padding:16px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0));
+      border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(6px);
+      border-radius:16px;padding:16px}
     h2,h3{margin:0 0 8px 0}
-    p{margin:0 0 10px 0;color:var(--ink)}
+    p{margin:0 0 10px 0}
     small,.muted{color:var(--muted)}
 
-    .lord blockquote{margin:8px 0;padding:12px 14px;border-left:3px solid var(--brand);background:rgba(255,255,255,0.03);border-radius:8px}
+    .lord blockquote{margin:8px 0;padding:12px 14px;border-left:3px solid var(--brand);
+      background:rgba(255,255,255,0.03);border-radius:8px}
 
     .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media(min-width:720px){.levels{grid-template-columns:repeat(4,1fr)}}
-    .level{padding:14px;border-radius:14px;background:linear-gradient(180deg,#0f1b31,#0e1627);border:1px solid rgba(255,255,255,0.08);position:relative}
+    .level{padding:14px;border-radius:14px;background:linear-gradient(180deg,#0f1b31,#0e1627);
+      border:1px solid rgba(255,255,255,0.08);position:relative}
     .level h4{margin:0 0 6px 0}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;background:rgba(255,255,255,0.06)}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;background:rgba(255,255,255,0.06)}
     .lock{position:absolute;top:10px;right:10px;font-size:12px;color:var(--muted)}
-    .level button{margin-top:10px;width:100%;padding:10px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#05101d;font-weight:800;cursor:pointer}
+    .level button{margin-top:10px;width:100%;padding:10px;border-radius:10px;
+      background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#05101d;
+      font-weight:800;cursor:pointer}
     .level.locked{opacity:0.55;filter:saturate(.6)}
     .done{color:var(--good);font-weight:700}
 
-    .searchbar{display:flex;gap:8px;margin:8px 0}
-    .searchbar input{flex:1;background:#0c1426;border:1px solid rgba(255,255,255,0.1);color:var(--ink);padding:10px;border-radius:10px}
-    .searchbar buttons{display:flex;gap:8px}
-    .searchbar button{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#06101d;font-weight:800;cursor:pointer}
+    .searchbar{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+    .searchbar input{flex:1 1 360px;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
+      color:var(--ink);padding:10px;border-radius:10px}
+    .btn{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));
+      border:none;color:#06101d;font-weight:800;cursor:pointer}
+    .btn.secondary{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,0.2)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
 
-    .timer{display:flex;align-items:center;gap:10px;margin-top:8px}
-    .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);outline:1px solid rgba(255,255,255,0.15)}
+    .timer{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+    .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);
+      outline:1px solid rgba(255,255,255,0.15)}
     .ring.live{background:var(--good)}
+    .progress{font-size:12px;color:var(--muted)}
 
-    .prayer{white-space:pre-wrap;line-height:1.55;background:#0c1426;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px}
-
-    .toggle{display:flex;align-items:center;gap:8px}
+    .prayer{white-space:pre-wrap;line-height:1.6;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
+      border-radius:12px;padding:14px;margin-top:12px}
     a{color:var(--brand2)}
   </style>
 </head>
@@ -63,7 +74,9 @@
         <div class="title">Grow from 15 minutes to one hour in prayer</div>
         <div class="subtitle">“What, could ye not watch with me one hour?” — Matthew 26:40 (KJV)</div>
       </div>
-      <div class="toggle"><input type="checkbox" id="testMode"/> <label for="testMode" class="muted">Test mode (short timers)</label></div>
+      <label class="muted" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="testMode"> Test mode (very short timers)
+      </label>
     </header>
 
     <div class="grid">
@@ -78,7 +91,7 @@
           And lead us not into temptation, but deliver us from evil:<br/>
           For thine is the kingdom, and the power, and the glory, for ever. Amen.</p>
         </blockquote>
-        <div class="muted">Tap a level below, search your need, and begin.</div>
+        <div class="muted">Tap a level, type your need, Generate, then press “More Prayer” while the timer runs.</div>
       </section>
 
       <aside class="card">
@@ -91,41 +104,43 @@
     <section class="card">
       <h3>Search for a prayer</h3>
       <div class="searchbar">
-        <input id="query" placeholder="e.g., healing for my mother, peace at work, guidance for decisions" />
-        <div class="buttons">
-          <button id="genBtn">Generate</button>
-          <button id="moreBtn" style="display:none">Load More (Continue in Prayer)</button>
-        </div>
+        <input id="query" placeholder="e.g., healing for my niece; peace at work; guidance for decisions" />
+        <button id="genBtn" class="btn">Generate</button>
+        <button id="moreBtn" class="btn secondary" style="display:none">More Prayer</button>
       </div>
 
       <div class="timer">
         <div id="ring" class="ring"></div>
         <div id="timerText" class="muted">No session active.</div>
+        <div id="levelProgress" class="progress"></div>
       </div>
 
-      <div id="prayer" class="prayer" style="margin-top:12px;display:none"></div>
-
-      <div style="margin-top:10px;display:flex;gap:8px">
-        <button id="startBtn" style="display:none" class="pill">Start session</button>
-        <button id="finishBtn" style="display:none" class="pill">Mark complete</button>
-      </div>
+      <div id="prayer" class="prayer" style="display:none"></div>
     </section>
   </div>
 
   <script>
-    // ------------------ Config & Persistent State ------------------
+    // ================== CONFIG ==================
     const LEVELS = [
-      { id:1, name:'Level 1', minutes:15, verseMin:1, verseMax:3, sections:['Adoration','Confession','Thanksgiving','Petition'] },
-      { id:2, name:'Level 2', minutes:30, verseMin:3, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition'] },
-      { id:3, name:'Level 3', minutes:45, verseMin:5, verseMax:7, sections:['Adoration','Thanksgiving','Intercession','Warfare','Word Meditation','Declarations','Petition'] },
-      { id:4, name:'Level 4', minutes:60, verseMin:7, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
+      { id:1, name:'Level 1', targetMin:15, verseMin:2, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Petition'] },
+      { id:2, name:'Level 2', targetMin:30, verseMin:3, verseMax:6, sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition'] },
+      { id:3, name:'Level 3', targetMin:45, verseMin:4, verseMax:8, sections:['Adoration','Thanksgiving','Intercession','Warfare','Word Meditation','Declarations','Petition'] },
+      { id:4, name:'Level 4', targetMin:60, verseMin:6, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
-    const STORAGE_KEY = 'watchWithMe.progress.v4';
+
+    // level-based chunk durations (minutes)
+    function initialChunkMin(level){ return [0,3,4,5,6][level]; } // L1=3, L2=4, L3=5, L4=6
+    function moreChunkMin(level){    return [0,2,3,4,5][level]; } // L1=2, L2=3, L3=4, L4=5
+
+    // test mode compression: seconds per "real minute"
+    const TEST_SECONDS_PER_MIN = 5; // demo speed (5s/min)
+
+    const STORAGE_KEY = 'watchWithMe.progress.v6';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ------------------ Scripture Pools (KJV excerpts) ------------------
+    // ================== SCRIPTURES (KJV excerpts) ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -210,67 +225,41 @@
       favor:['favor','favour','opportunity','open door','acceptance']
     };
 
-    // ------------------ DOM ------------------
+    // ================== DOM ==================
     const levelsEl = document.getElementById('levels');
     const journeyEl = document.getElementById('journey');
-    const queryEl = document.getElementById('query');
-    const prayerEl = document.getElementById('prayer');
-    const startBtn = document.getElementById('startBtn');
-    const finishBtn = document.getElementById('finishBtn');
-    const genBtn = document.getElementById('genBtn');
-    const moreBtn = document.getElementById('moreBtn');
-    const ring = document.getElementById('ring');
+    const queryEl   = document.getElementById('query');
+    const prayerEl  = document.getElementById('prayer');
+    const genBtn    = document.getElementById('genBtn');
+    const moreBtn   = document.getElementById('moreBtn');
+    const ring      = document.getElementById('ring');
     const timerText = document.getElementById('timerText');
-    const testMode = document.getElementById('testMode');
+    const levelProgress = document.getElementById('levelProgress');
+    const testMode  = document.getElementById('testMode');
 
     testMode.checked = !!progress.testMode;
 
-    // ------------------ State ------------------
+    // ================== STATE ==================
     let currentLevel = 1;
     let activeSeconds = 0;
     let countdown = null;
+    let cumulativeSeconds = 0;
+    let session = null; // { level, topics, ctx, query, selectedRefs:Set, verses:[], md }
 
-    // session = { level, topics, ctx, query, selectedRefs:Set, verses:[], baseParts:{parts, vList, topicLine}, extensions:[] }
-    let session = null;
-
+    // ================== HELPERS ==================
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
-    function unlocked(levelId){ return levelId===1 || progress.completedLevels.includes(levelId-1); }
+    function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
+    function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
+    function targetSecondsFor(levelId){ return secondsForMinutes(LEVELS.find(l=>l.id===levelId).targetMin); }
+    function fmt(sec){ const m=Math.floor(sec/60), s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
 
-    // ------------------ UI ------------------
-    function renderLevels(){
-      levelsEl.innerHTML = '';
-      LEVELS.forEach(l=>{
-        const div = document.createElement('div');
-        div.className = 'level' + (unlocked(l.id)?'':' locked');
-        div.innerHTML = `
-          <div class="lock">${progress.completedLevels.includes(l.id)?'<span class="done">✓ Completed</span>':''}</div>
-          <h4>${l.name}</h4>
-          <div class="muted">${l.minutes} minutes • Sections: ${l.sections.length}</div>
-          <div class="pill" style="margin-top:8px">${l.sections.join(' • ')}</div>
-          <button ${unlocked(l.id)?'':'disabled'} data-id="${l.id}">Select</button>
-        `;
-        div.querySelector('button')?.addEventListener('click',()=>{
-          currentLevel = l.id; updateJourney();
-        });
-        levelsEl.appendChild(div);
-      });
-    }
-    function updateJourney(){
-      const l = LEVELS.find(x=>x.id===currentLevel);
-      journeyEl.textContent = `Current: ${l.name} — ${l.minutes} minutes. Complete this level to unlock the next.`;
-    }
-
-    renderLevels(); updateJourney();
-
-    // ------------------ NLP helpers ------------------
     function tokenize(s){
       return (s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ')
         .split(/\s+/).filter(t=>t && t.length>2 && !['the','and','for','with','this','that','have','from','your','you','our','her','him','his','she','they','them','are','was','will','not'].includes(t));
     }
     function extractContext(text){
       const rels=['me','my','mother','mom','father','dad','wife','husband','son','daughter','child','children','friend','brother','sister','boss','coworker','niece','nephew','grandma','grandpa'];
-      const words=(text||'').split(/\s+/);
-      let target=null,name=null;
+      const words=(text||'').split(/\s+/); let target=null,name=null;
       for(let i=0;i<words.length;i++){
         const w=words[i].toLowerCase().replace(/[^a-z]/g,'');
         if(rels.includes(w)){ target=w; const next=words[i+1]; if(next && /^[A-Z][a-z'-]+$/.test(next)) name=next; break; }
@@ -278,243 +267,254 @@
       return { targetText: target ? (name? `${target} ${name}`:target) : null };
     }
     function detectTopics(text){
-      const q=(text||'').toLowerCase(); const scores={};
-      for(const [topic,words] of Object.entries(KEYWORDS)){
-        scores[topic]=words.reduce((a,w)=>a+(q.includes(w)?1:0),0);
-      }
+      const q=(text||'').toLowerCase(), scores={};
+      for(const [topic,words] of Object.entries(KEYWORDS)){ scores[topic]=words.reduce((a,w)=>a+(q.includes(w)?1:0),0); }
       if(q.includes('heal')) scores.healing=(scores.healing||0)+1;
       if(q.includes('anx')) scores.anxiety=(scores.anxiety||0)+1;
       const ranked=Object.entries(scores).filter(([,s])=>s>0).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
       return ranked.length? ranked.slice(0,2):['guidance'];
     }
-    function pickVerses(topics, min, max, query, alreadyRefs=new Set()){
-      const pools = topics.flatMap(t=> VERSES[t] || []);
-      const base = pools.length? pools : VERSES['guidance'];
-      const tokens = tokenize(query);
-      const scored = base.map(v=>{
-        const t = (v.text+' '+v.ref).toLowerCase();
-        const score = tokens.reduce((acc,tk)=> acc + (t.includes(tk)?1:0), 0);
-        return { v, score };
-      }).sort((a,b)=> b.score - a.score);
-
-      // prefer unused refs first, then score
-      const ordered = scored.slice().sort((a,b)=>{
-        const aUsed = alreadyRefs.has(a.v.ref), bUsed = alreadyRefs.has(b.v.ref);
-        if(aUsed!==bUsed) return aUsed - bUsed; // unused first
-        return b.score - a.score;
-      });
-
+    function pickVerses(topics, min, max, query, already=new Set()){
+      const pools = topics.flatMap(t=>VERSES[t]||[]);
+      const base  = pools.length? pools : VERSES['guidance'];
+      const tokens= tokenize(query);
+      const scored= base.map(v=>{
+        const t=(v.text+' '+v.ref).toLowerCase();
+        const score=tokens.reduce((acc,tk)=>acc+(t.includes(tk)?1:0),0);
+        return {v,score};
+      }).sort((a,b)=>b.score-a.score);
       const targetN = Math.min(base.length, Math.max(min, Math.min(max, base.length)));
       const out=[];
-      for(const item of ordered){
+      for(const it of scored){
         if(out.length>=targetN) break;
-        if(!alreadyRefs.has(item.v.ref)){ out.push(item.v); alreadyRefs.add(item.v.ref); }
+        if(!already.has(it.v.ref)){ out.push(it.v); already.add(it.v.ref); }
       }
       return out;
     }
 
-    // ------------------ Prayer assembly ------------------
-    function makeBasePrayerSections(level, topics, verses, query, ctx){
-      const L = LEVELS.find(l=>l.id===level);
-      const opener = ['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
+    function renderLevels(){
+      levelsEl.innerHTML='';
+      LEVELS.forEach(l=>{
+        const div=document.createElement('div');
+        div.className='level'+(unlocked(l.id)?'':' locked');
+        div.innerHTML=`
+          <div class="lock">${progress.completedLevels.includes(l.id)?'<span class="done">✓ Completed</span>':''}</div>
+          <h4>${l.name}</h4>
+          <div class="muted">Target: ${l.targetMin} minutes • Sections: ${l.sections.length}</div>
+          <div class="pill" style="margin-top:8px">${l.sections.join(' • ')}</div>
+          <button ${unlocked(l.id)?'':'disabled'} data-id="${l.id}">Select</button>
+        `;
+        div.querySelector('button')?.addEventListener('click',()=>{
+          currentLevel=l.id; updateJourney();
+        });
+        levelsEl.appendChild(div);
+      });
+    }
+    function updateJourney(){
+      const L=LEVELS.find(x=>x.id===currentLevel);
+      const targ=targetSecondsFor(currentLevel);
+      levelProgress.textContent = cumulativeSeconds>0 ? `Progress this level: ${fmt(cumulativeSeconds)} / ${fmt(targ)}` : '';
+      journeyEl.textContent = `Current: ${L.name} — target ${L.targetMin} minutes. Press “More Prayer” to continue until complete.`;
+    }
+
+    function markdownToHTML(md){
+      return md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
+    }
+
+    // ========= Prayer builders =========
+    function basePrayer(level, topics, verses, query, ctx){
+      const L=LEVELS.find(l=>l.id===level);
+      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
       const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
-      const topicNames = topics.map(t=>t.replace('_',' ')).join(' & ');
+      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
       const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
 
-      const parts = [];
-      parts.push(`**Adoration**\n${opener} You are holy, righteous, and faithful. Your Name is above every name.`);
-
-      if(L.sections.includes('Confession')){
-        parts.push(`**Confession**\nSearch me and know my heart. Forgive me where I have fallen short in word, thought, and deed; cleanse me and renew a right spirit within me (Ps 51:10).`);
-      }
-
-      parts.push(`**Thanksgiving**\nThank You for Your steadfast love and for hearing us when we call. Thank You for the cross and the hope we have in Christ.`);
+      const paragraphs = [];
+      // richer worship as level rises
+      const adoration = [
+        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
+        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
+        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
+      ];
+      const thanks = [
+        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
+        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
+      ];
+      paragraphs.push(`${opener} ${adoration.slice(0,1+Math.min(level-1,2)).join(' ')}`);
+      paragraphs.push(thanks.slice(0,1+Math.min(level-1,1)).join(' '));
 
       if(L.sections.includes('Intercession') || L.sections.includes('Strategic Intercession')){
-        parts.push(`**Intercession**\nI lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`);
-      }
-
-      if(L.sections.includes('Warfare')){
-        parts.push(`**Warfare**\nIn the authority of Jesus, I resist the enemy and every lie. I put on the whole armour of God (Eph 6). Let every stronghold and accusation fall (2 Cor 10:4-5).`);
+        paragraphs.push(`I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word. Let Your kingdom come and Your will be done in every detail.`);
+      } else {
+        paragraphs.push(`${topicLine} I ask for Your wisdom, strength, and peace. Lead me in Your paths of righteousness for Your Name’s sake. Establish my thoughts and steady my heart.`);
       }
 
       if(L.sections.includes('Word Meditation')){
-        parts.push(`**Word Meditation**\nYour Word is life and light (Ps 119:105). I receive Your promises by faith and ask the Holy Spirit to teach, comfort, and guide.`);
+        paragraphs.push(`Your Word is life and light. Write Your truth on my heart and renew my mind. Speak, Lord; I am listening with a willing spirit to obey.`);
       }
-
-      if(L.sections.includes('Listening')){
-        parts.push('**Listening**\n(Quiet your heart for a minute and pray: “Speak, Lord, for Your servant hears.” Wait with expectancy.)');
+      if(L.sections.includes('Warfare')){
+        paragraphs.push(`In Jesus’ authority, I resist every lie of the enemy. I put on the whole armour of God and cast down imaginations that rise against the knowledge of God. Let every stronghold fall by the power of the cross.`);
       }
+      paragraphs.push(`Father, I trust You with this situation. Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.`);
 
-      if(L.sections.includes('Declarations')){
-        parts.push('**Declarations**\nI agree with Your promises and speak life: Your Word will not return void. Jesus is Lord over this situation. Hope arises; peace reigns; Your kingdom advances.');
-      }
-
-      parts.push(`**Petition**\n${topicLine} Let Your kingdom come and Your will be done. Grant wisdom, courage, provision, and steadfast faith. Surround us with Your peace.`);
-
-      if(L.sections.includes('Blessing & Commission')){
-        parts.push('**Blessing & Commission**\nBless me to walk in love today. Send me as a peacemaker and a witness of Christ. May the words of my mouth and the meditation of my heart be acceptable in Your sight.');
-      }
-
-      return { parts, topicLine };
-    }
-
-    function buildPrayerMarkdown(baseParts, extensions, verses){
       const scriptureBlock = `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
       const closing = ['In Jesus’ Name, amen.','Through Jesus Christ our Lord, amen.','In the mighty Name of Jesus, amen.'][Math.floor(Math.random()*3)];
-      return [...baseParts.parts, ...extensions, scriptureBlock, closing].join('\n\n');
+
+      return [...paragraphs, scriptureBlock, closing].join('\n\n');
     }
 
-    function generateContinuation(topics){
-      const lines = [
+    function continuation(level, topics){
+      const baseLines = [
         'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
-        'Strengthen my inner man by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
+        'Strengthen my inner being by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
         'I surrender the parts of me that resist You. Form Christ in me—thought by thought, breath by breath.',
-        'Let Your love cast out fear. Fill this space with Your presence until my heart rests in Your promises.',
-        'Give me grace to persevere in prayer. Not by might nor by power, but by Your Spirit, O Lord.',
+        'Let Your love cast out fear. Fill this place with Your presence until my heart rests in Your promises.',
         'As I wait on You, renew my strength. Lift my eyes above the storm to the One who speaks, “Peace, be still.”',
-        'Open my ears to wisdom and my eyes to Your paths. Make my steps steady upon Your Word.'
+        'Order my steps and confirm Your way with wisdom from above. Make my path straight and my heart steadfast.'
       ];
-      const topicPhrases = {
-        healing:'Release Your healing virtue and make whole in body, soul, and spirit.',
+      const topicFlavor = {
+        healing:'Release Your healing virtue; make whole in body, soul, and spirit.',
         anxiety:'Speak Your perfect peace over every racing thought and heavy breath.',
         peace:'Let the peace of Christ rule in my heart and every room I enter.',
-        guidance:'Order my steps and confirm Your way with wisdom from above.',
-        provision:'Provide according to Your riches in glory, and teach contentment in every season.',
+        guidance:'Illuminate the next step and anchor me in Your counsel.',
+        provision:'Provide according to Your riches in glory and teach holy contentment.',
         employment:'Establish the work of my hands and grant favor with those I serve.',
-        forgiveness:'Wash me and restore me, that I may walk with clean hands and a pure heart.',
+        forgiveness:'Wash and restore me, that I may walk in a clean heart.',
         protection:'Be a hedge around me; guard my going out and my coming in.',
-        grief:'Comfort me in sorrow and turn my mourning into songs of hope.',
-        spiritual_warfare:'By the cross, disarm the schemes of the enemy and let truth prevail.',
+        grief:'Comfort me in sorrow and turn mourning into songs of hope.',
+        spiritual_warfare:'Disarm every scheme of the enemy and let truth prevail.',
         salvation:'Draw hearts to Jesus; open the door of faith and breathe new life.',
         purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
         wisdom:'Give me a wise and understanding heart that delights in Your counsel.'
       };
-      const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
-      const flavor = topics.map(t=>topicPhrases[t]).filter(Boolean);
-      return `${pick(lines)} ${pick(lines)} ${flavor.length? pick(flavor):''}`.trim();
+      const countByLevel = {1:1, 2:2, 3:2, 4:3}; // more lines at higher levels
+      const n = countByLevel[level] || 1;
+      let out = [];
+      for(let i=0;i<n;i++){
+        out.push(baseLines[Math.floor(Math.random()*baseLines.length)]);
+      }
+      const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
+      if(flavors.length) out.push(flavors[Math.floor(Math.random()*flavors.length)]);
+      return out.join(' ');
     }
 
-    // ------------------ Timers & gating ------------------
-    function levelSeconds(level){
-      const minutes = LEVELS.find(l=>l.id===level).minutes;
-      return progress.testMode ? Math.max(60, Math.round(minutes*3)) : minutes*60;
+    function appendPrayer(md, extParagraph, verses){
+      const parts = md.split('**Scripture to Stand On (KJV)**');
+      if(parts.length===1){
+        return md + '\n\n' + extParagraph + '\n\n' +
+          `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}` +
+          `\n\nIn Jesus’ Name, amen.`;
+      } else {
+        const head = parts[0].trim();
+        const newScript = `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
+        return [head, extParagraph, newScript, 'In Jesus’ Name, amen.'].join('\n\n');
+      }
     }
-    function startTimer(){
-      if(!session) return;
+
+    // ========= TIMER & PROGRESSION =========
+    let countdown = null;
+    let activeSeconds = 0;
+    let cumulativeSeconds = 0;
+
+    function startChunkForLevel(level, kind){ // kind: 'initial' | 'more'
+      const mins = kind==='initial' ? initialChunkMin(level) : moreChunkMin(level);
+      startChunk(secondsForMinutes(mins));
+    }
+
+    function startChunk(seconds){
       clearInterval(countdown);
-      activeSeconds = levelSeconds(session.level);
+      activeSeconds = seconds;
       ring.classList.add('live');
       updateTimerText();
-      moreBtn.disabled = false; // allow deepening during timer
+
       countdown = setInterval(()=>{
-        activeSeconds--; updateTimerText();
-        if(activeSeconds<=0){
+        activeSeconds--;
+        cumulativeSeconds++;
+        updateTimerText();
+        const targ = targetSecondsFor(currentLevel);
+        if(cumulativeSeconds >= targ){
+          completeLevel();
+        } else if(activeSeconds<=0){
           clearInterval(countdown);
           ring.classList.remove('live');
-          timerText.textContent = 'Session complete. Advancing to next level.';
-          // Lock deepening
-          moreBtn.disabled = true;
-          genBtn.disabled = true;
-          startBtn.disabled = true;
-
-          // Mark complete and unlock next
-          if(!progress.completedLevels.includes(session.level)){
-            progress.completedLevels.push(session.level); save();
-          }
-          renderLevels();
-
-          // Auto-advance selection (manual start next)
-          if(session.level < 4){
-            currentLevel = session.level + 1;
-            updateJourney();
-          }
+          timerText.textContent = 'Chunk complete. Press “More Prayer” to continue.';
         }
       },1000);
     }
+
     function updateTimerText(){
-      const m = Math.floor(activeSeconds/60).toString();
-      const s = Math.floor(activeSeconds%60).toString().padStart(2,'0');
-      timerText.textContent = activeSeconds>0?`Time remaining: ${m}:${s}`:'No session active.';
+      const targ = targetSecondsFor(currentLevel);
+      timerText.textContent = activeSeconds>0 ? `Time remaining: ${fmt(activeSeconds)}` : 'No session active.';
+      levelProgress.textContent = `Progress this level: ${fmt(cumulativeSeconds)} / ${fmt(targ)}`;
     }
 
-    // ------------------ Events ------------------
-    testMode.addEventListener('change',()=>{progress.testMode=testMode.checked; save();});
-
-    genBtn.addEventListener('click',()=>{
-      const q = queryEl.value.trim();
-      const topics = detectTopics(q);
-      const ctx = extractContext(q);
+    function completeLevel(){
+      clearInterval(countdown);
+      ring.classList.remove('live');
       const L = LEVELS.find(l=>l.id===currentLevel);
+      timerText.textContent = `${L.name} complete. Next level unlocked.`;
+      if(!progress.completedLevels.includes(currentLevel)){
+        progress.completedLevels.push(currentLevel); save();
+      }
+      renderLevels();
+      if(currentLevel<4){ currentLevel += 1; }
+      cumulativeSeconds = 0;
+      updateJourney();
+      moreBtn.disabled = true;
+      genBtn.disabled  = false;
+    }
+
+    // ========= EVENTS =========
+    document.getElementById('testMode').addEventListener('change',()=>{
+      progress.testMode = testMode.checked; save(); updateJourney();
+    });
+
+    genBtn.addEventListener('click', ()=>{
+      const query = queryEl.value.trim();
+      const topics = detectTopics(query);
+      const ctx    = extractContext(query);
+      const L      = LEVELS.find(l=>l.id===currentLevel);
 
       const selectedRefs = new Set();
-      const verses = pickVerses(topics, L.verseMin, L.verseMax, q, selectedRefs);
-      const baseParts = makeBasePrayerSections(currentLevel, topics, verses, q, ctx);
+      const verses = pickVerses(topics, L.verseMin, L.verseMax, query, selectedRefs);
 
-      session = { level: currentLevel, topics, ctx, query:q, selectedRefs, verses:[...verses], baseParts, extensions: [] };
-
-      const md = buildPrayerMarkdown(baseParts, session.extensions, session.verses);
+      let md = basePrayer(currentLevel, topics, verses, query, ctx);
       prayerEl.style.display='block';
       prayerEl.innerHTML = markdownToHTML(md);
 
-      startBtn.style.display='inline-flex';
-      startBtn.disabled = false;
-
-      finishBtn.style.display='inline-flex';
-      finishBtn.disabled = false;
-
+      session = { level: currentLevel, topics, ctx, query, selectedRefs, verses:[...verses], md };
       moreBtn.style.display='inline-block';
-      moreBtn.disabled = true; // enabled when timer starts
+      moreBtn.disabled = false;
 
-      ring.classList.remove('live');
-      clearInterval(countdown);
-      activeSeconds = 0; updateTimerText();
-
-      genBtn.disabled = false;
+      // start initial level-sized chunk
+      startChunkForLevel(currentLevel,'initial');
     });
-
-    startBtn.addEventListener('click', startTimer);
 
     moreBtn.addEventListener('click', ()=>{
-      if(!session || activeSeconds<=0) return; // only during active session
-      // extend prayer
-      const ext = generateContinuation(session.topics);
-      session.extensions.push(ext);
-
-      // try to add another verse (within level cap)
+      if(!session) return;
       const L = LEVELS.find(l=>l.id===session.level);
+
+      // extend prayer content
+      const ext = continuation(session.level, session.topics);
       if(session.verses.length < L.verseMax){
         const extra = pickVerses(session.topics, session.verses.length+1, session.verses.length+1, session.query, session.selectedRefs);
-        if(extra.length){
-          session.verses.push(extra[extra.length-1]);
-        }
+        if(extra.length){ session.verses.push(extra[extra.length-1]); }
       }
-      const md = buildPrayerMarkdown(session.baseParts, session.extensions, session.verses);
-      prayerEl.innerHTML = markdownToHTML(md);
+      session.md = appendPrayer(session.md, ext, session.verses);
+      prayerEl.innerHTML = markdownToHTML(session.md);
+
+      // start a new "more" chunk for this level
+      startChunkForLevel(session.level,'more');
     });
 
-    finishBtn.addEventListener('click',()=>{
-      if(session && !progress.completedLevels.includes(session.level)){
-        progress.completedLevels.push(session.level); save();
-      }
-      clearInterval(countdown);
-      ring.classList.remove('live');
-      activeSeconds=0; updateTimerText();
-      moreBtn.disabled = true;
-
+    // ========= INIT =========
+    function boot(){
+      // clean any invalid stored ids
+      progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
-      if(session && session.level<4){
-        currentLevel = session.level+1;
-        updateJourney();
-      } else {
-        updateJourney();
-      }
-    });
-
-    // ------------------ Markdown tiny renderer ------------------
-    function markdownToHTML(md){
-      return md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
+      updateJourney();
     }
+    boot();
   </script>
 </body>
 </html>
