@@ -8,6 +8,14 @@
     :root{
       --bg:#0b1220;--card:#111a2e;--ink:#e6ecff;--muted:#a8b3d1;--brand:#4ea8ff;--brand2:#9ad4ff;
       --good:#2ecc71;--highlight:#ffe66a;--ink-dark:#0b1220;
+      --tone-gentle-1:#7bd3ff; --tone-gentle-2:#b4ecff;
+      --tone-thanks-1:#ffd56b; --tone-thanks-2:#ffe9a4;
+      --tone-warfare-1:#ff6b6b; --tone-warfare-2:#ffd1d1;
+      --tone-intercession-1:#9b83ff; --tone-intercession-2:#d6ccff;
+      --tone-lament-1:#6bd0a4; --tone-lament-2:#c9f3e5;
+      --tone-celebration-1:#ffa36b; --tone-celebration-2:#ffd4b4;
+      --tone-confession-1:#7bb27d; --tone-confession-2:#cdeac0;
+      --tone-guidance-1:#74c0fc; --tone-guidance-2:#c5e7ff;
     }
     *{box-sizing:border-box}
     body{
@@ -60,9 +68,9 @@
     }
     .level.locked{opacity:0.55;filter:saturate(.6)}
 
-    .searchbar{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
-    .searchbar input{
-      flex:1 1 360px;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
+    .searchbar{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;align-items:center}
+    .searchbar input, .searchbar select{
+      flex:1 1 240px;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
       color:var(--ink);padding:10px;border-radius:10px
     }
     .btn{
@@ -92,6 +100,17 @@
     .scriptures strong{display:block;margin-bottom:6px}
     .scriptures li{margin:4px 0 0 18px}
 
+    .toneCard{
+      width:100%;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.15);
+      padding:10px 12px;
+      color:#0c1420;
+      display:flex;align-items:center;gap:10px;
+      font-weight:600;
+    }
+    .toneEmoji{font-size:18px}
+    .toneText{font-size:0.95rem}
     a{color:var(--brand2)}
   </style>
 </head>
@@ -121,7 +140,7 @@
           And lead us not into temptation, but deliver us from evil:<br/>
           For thine is the kingdom, and the power, and the glory, for ever. Amen.</p>
         </blockquote>
-        <div class="muted">Tap a level, type your need, Generate, then press “More Prayer” while the timer runs.</div>
+        <div class="muted">Tap a level, type your need, choose a tone, Generate, then press “More Prayer” while the timer runs.</div>
       </section>
 
       <aside class="card">
@@ -135,8 +154,24 @@
       <h3>Search for a prayer</h3>
       <div class="searchbar">
         <input id="query" placeholder="e.g., healing for my niece; peace at work; guidance for decisions" />
+        <select id="tone">
+          <option value="gentle" selected>Gentle</option>
+          <option value="intercession">Intercession</option>
+          <option value="warfare">Warfare</option>
+          <option value="thanksgiving">Thanksgiving</option>
+          <option value="lament">Lament / Comfort</option>
+          <option value="celebration">Celebration / Praise</option>
+          <option value="confession">Confession / Repentance</option>
+          <option value="guidance">Guidance / Wisdom</option>
+        </select>
         <button id="genBtn" class="btn">Generate</button>
         <button id="moreBtn" class="btn secondary" style="display:none">More Prayer</button>
+      </div>
+
+      <!-- Tone visual hint card -->
+      <div id="toneCard" class="toneCard" style="display:none;">
+        <span id="toneEmoji" class="toneEmoji">🌿</span>
+        <span id="toneText" class="toneText">Gentle: calm, pastoral, comforting.</span>
       </div>
 
       <div class="timer">
@@ -159,11 +194,31 @@
     ];
     function chunkMin(level){ return [0,3,5,5,6][level]; } // 10 paras per chunk
 
+    // Default tones by level:
+    const DEFAULT_TONE_BY_LEVEL = {
+      1: 'gentle',
+      2: 'thanksgiving',
+      3: 'warfare',
+      4: 'intercession'
+    };
+
+    // Tone meta for card styling
+    const TONE_META = {
+      gentle:      {emoji:'🌿', text:'Gentle: calm, pastoral, comforting.',          g1:'var(--tone-gentle-1)', g2:'var(--tone-gentle-2)'},
+      intercession:{emoji:'🕊️', text:'Intercession: standing in the gap with faith and persistence.', g1:'var(--tone-intercession-1)', g2:'var(--tone-intercession-2)'},
+      warfare:     {emoji:'⚔️', text:'Warfare: bold, authoritative, Scripture-rich prayer.',           g1:'var(--tone-warfare-1)', g2:'var(--tone-warfare-2)'},
+      thanksgiving:{emoji:'🙏', text:'Thanksgiving: grateful remembrance of God’s goodness.',          g1:'var(--tone-thanks-1)', g2:'var(--tone-thanks-2)'},
+      lament:      {emoji:'🫀', text:'Lament / Comfort: honest sorrow; God’s nearness and comfort.',   g1:'var(--tone-lament-1)', g2:'var(--tone-lament-2)'},
+      celebration: {emoji:'🎉', text:'Celebration / Praise: joyful exaltation of God’s faithfulness.', g1:'var(--tone-celebration-1)', g2:'var(--tone-celebration-2)'},
+      confession:  {emoji:'🕯️', text:'Confession / Repentance: honest heart, cleansing and renewal.', g1:'var(--tone-confession-1)', g2:'var(--tone-confession-2)'},
+      guidance:    {emoji:'📖', text:'Guidance / Wisdom: clarity, discernment, alignment with God.',    g1:'var(--tone-guidance-1)', g2:'var(--tone-guidance-2)'}
+    };
+
     // Test mode
     const TEST_SECONDS_PER_MIN = 5;
 
     // ================== STORAGE ==================
-    const STORAGE_KEY = 'watchWithMe.progress.v11';
+    const STORAGE_KEY = 'watchWithMe.progress.v13';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
@@ -257,6 +312,10 @@
     const levelsEl = document.getElementById('levels');
     const journeyEl = document.getElementById('journey');
     const queryEl   = document.getElementById('query');
+    const toneEl    = document.getElementById('tone');
+    const toneCard  = document.getElementById('toneCard');
+    const toneEmoji = document.getElementById('toneEmoji');
+    const toneText  = document.getElementById('toneText');
     const prayerEl  = document.getElementById('prayer');
     const genBtn    = document.getElementById('genBtn');
     const moreBtn   = document.getElementById('moreBtn');
@@ -270,7 +329,7 @@
 
     // STATE
     let currentLevel = 1;
-    let session = null; // { level, topics, ctx, query, selectedRefs:Set, verses:[], blocks:[{paras:string[]}] }
+    let session = null; // { level, topics, ctx, query, tone, selectedRefs:Set, verses:[], blocks:[{paras:string[]}] }
     let countdown = null;
     let activeSeconds = 0;
     let cumulativeSeconds = 0;
@@ -350,11 +409,22 @@
       wisdom:'Give me a wise and understanding heart that delights in Your counsel.',
       favor:'Surround me with favor as with a shield; open doors no one can shut.'
     };
-    function introParagraphs(level, topics, query, ctx){
+    const toneBoost = {
+      gentle:'Let my words be gentle and full of peace.',
+      intercession:'I stand in the gap and plead for mercy and breakthrough.',
+      warfare:'In Jesus’ authority I resist the enemy; let every stronghold fall.',
+      thanksgiving:'With gratitude, I recount Your goodness and faithfulness.',
+      lament:'You are near to the brokenhearted; receive my honest tears and comfort me.',
+      celebration:'My heart rejoices; magnify the Lord with me!',
+      confession:'Search me and cleanse me; create in me a clean heart, O God.',
+      guidance:'Grant clarity and a wise, understanding heart.'
+    };
+    function introParagraphs(level, topics, query, ctx, toneKey){
       const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
       const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
       const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
       const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
+      const boost = toneBoost[toneKey] ? ' ' + toneBoost[toneKey] : '';
       const adoration = [
         'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
         'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
@@ -364,7 +434,7 @@
         'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
         'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
       ];
-      const coreAsk = `I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`;
+      const coreAsk = `I lift${who} before Your throne.${boost} ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`;
       const arr = [];
       arr.push(`${opener} ${adoration[0]}`);
       if(level>1) arr.push(adoration[1]);
@@ -372,12 +442,11 @@
       arr.push(thanks[0]);
       if(level>2) arr.push(thanks[1]);
       arr.push(coreAsk);
-      arr.push('Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.');
-      if(level>=3) arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
+      if(toneKey==='warfare') arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
       if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
       return arr;
     }
-    function generateParagraphs(count, level, topics){
+    function generateParagraphs(count, level, topics, toneKey){
       const result = [];
       for(let i=0;i<count;i++){
         let line = deepLines[Math.floor(Math.random()*deepLines.length)];
@@ -387,18 +456,21 @@
             line += ' ' + flavors[Math.floor(Math.random()*flavors.length)];
           }
         }
+        if(toneBoost[toneKey] && Math.random()<0.4){
+          line += ' ' + toneBoost[toneKey];
+        }
         result.push(line);
       }
       return result;
     }
 
-    // ====== AI GENERATION (optional, hardened) ======
-    async function aiGenerateParagraphs({query, level, topics, previousText, count=10}) {
+    // ====== AI GENERATION (optional) ======
+    async function aiGenerateParagraphs({query, level, topics, previousText, tone, count=10}) {
       try {
         const res = await fetch('/api/generatePrayer', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ query, level, topics, previousText, count })
+          body: JSON.stringify({ query, level, topics, previousText, tone, count })
         });
         if(!res.ok) throw new Error(`API ${res.status}`);
         const data = await res.json();
@@ -408,7 +480,7 @@
         return data;
       } catch (e) {
         console.warn('AI generation failed; using local generator:', e);
-        return { paragraphs: generateParagraphs(count, level, topics) };
+        return { paragraphs: generateParagraphs(count, level, topics, tone) };
       }
     }
 
@@ -427,6 +499,8 @@
         `;
         div.querySelector('button')?.addEventListener('click',()=>{
           currentLevel=l.id;
+          // Apply default tone for this level
+          setTone(DEFAULT_TONE_BY_LEVEL[currentLevel]);
           cumulativeSeconds = 0;
           updateJourney();
         });
@@ -496,17 +570,33 @@
       }
       renderLevels();
       if(currentLevel<4){ currentLevel += 1; }
+      // move tone to next level default
+      setTone(DEFAULT_TONE_BY_LEVEL[currentLevel] || 'gentle');
       cumulativeSeconds = 0;
       updateJourney();
       moreBtn.disabled = true;
       genBtn.disabled  = false;
     }
 
+    // ===== Tone card helpers =====
+    function setTone(toneKey){
+      const meta = TONE_META[toneKey] || TONE_META.gentle;
+      toneEl.value = toneKey;
+      toneCard.style.display = 'flex';
+      toneCard.style.background = `linear-gradient(90deg, ${meta.g1}, ${meta.g2})`;
+      toneEmoji.textContent = meta.emoji;
+      toneText.textContent  = meta.text;
+    }
+    toneEl.addEventListener('change',()=>{
+      setTone(toneEl.value);
+    });
+
     // ===== EVENTS =====
     testMode.addEventListener('change',()=>{progress.testMode = testMode.checked; save(); updateJourney();});
 
     genBtn.addEventListener('click', async ()=>{
       const query = queryEl.value.trim();
+      const tone  = toneEl.value;
       const topics = detectTopics(query);
       const ctx    = extractContext(query);
       const L      = LEVELS.find(l=>l.id===currentLevel);
@@ -516,7 +606,7 @@
 
       let firstParas = [];
       if(document.getElementById('aiMode').checked){
-        const ai = await aiGenerateParagraphs({query, level: currentLevel, topics, previousText: '', count: 10});
+        const ai = await aiGenerateParagraphs({query, level: currentLevel, topics, previousText: '', tone, count: 10});
         firstParas = ai.paragraphs || [];
         if(Array.isArray(ai.scriptures)){
           ai.scriptures.forEach(s=>{
@@ -527,15 +617,15 @@
           });
         }
       }else{
-        const block0 = introParagraphs(currentLevel, topics, query, ctx);
+        const block0 = introParagraphs(currentLevel, topics, query, ctx, tone);
         const needed = Math.max(0, 10 - block0.length);
-        const extras = generateParagraphs(needed, currentLevel, topics);
+        const extras = generateParagraphs(needed, currentLevel, topics, tone);
         firstParas = block0.concat(extras);
       }
 
       session = {
         level: currentLevel,
-        topics, ctx, query,
+        topics, ctx, query, tone,
         selectedRefs, verses: verses.slice(0, L.verseMax),
         blocks:[{ paras:firstParas }]
       };
@@ -562,6 +652,7 @@
           level: session.level,
           topics: session.topics,
           previousText,
+          tone: session.tone,
           count: 10
         });
         newParas = ai.paragraphs || [];
@@ -575,7 +666,7 @@
           }
         }
       }else{
-        newParas = generateParagraphs(10, session.level, session.topics);
+        newParas = generateParagraphs(10, session.level, session.topics, session.tone);
       }
 
       session.blocks.push({ paras:newParas });
@@ -596,6 +687,8 @@
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
       updateJourney();
+      // apply default tone on first load
+      setTone(DEFAULT_TONE_BY_LEVEL[currentLevel] || 'gentle');
     }
     boot();
   </script>
