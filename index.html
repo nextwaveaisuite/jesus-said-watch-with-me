@@ -17,10 +17,12 @@
       color:var(--ink)
     }
     .wrap{max-width:1000px;margin:0 auto;padding:24px}
-    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
     .title{font-weight:800;letter-spacing:0.2px;font-size:clamp(1.2rem,3vw,1.8rem);}
     .subtitle{color:var(--muted);font-size:0.95rem}
     .badge{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#08121e;padding:6px 10px;border-radius:999px;font-weight:700}
+    .toggles{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .toggles label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:0.95rem}
 
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     @media(min-width:860px){.grid{grid-template-columns:2fr 1fr}}
@@ -101,9 +103,10 @@
         <div class="title">Grow from 15 minutes to one hour in prayer</div>
         <div class="subtitle">“What, could ye not watch with me one hour?” — Matthew 26:40 (KJV)</div>
       </div>
-      <label class="muted" style="display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="testMode"> Test mode (very short timers)
-      </label>
+      <div class="toggles">
+        <label><input type="checkbox" id="testMode"> Test mode (very short timers)</label>
+        <label><input type="checkbox" id="aiMode"> Enable Advanced Prayer AI</label>
+      </div>
     </header>
 
     <div class="grid">
@@ -154,20 +157,18 @@
       { id:3, name:'Level 3', targetMin:45, verseMin:4, verseMax:8, sections:['Adoration','Thanksgiving','Intercession','Warfare','Word Meditation','Declarations','Petition'] },
       { id:4, name:'Level 4', targetMin:60, verseMin:6, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
+    function chunkMin(level){ return [0,3,5,5,6][level]; } // 10 paras per chunk
 
-    // Per-level chunk duration (minutes) — 10 paragraphs per chunk
-    function chunkMin(level){ return [0,3,5,5,6][level]; } // L1=3, L2=5, L3=5, L4=6
-
-    // Test mode (compress time)
-    const TEST_SECONDS_PER_MIN = 5; // 5s per "minute" in demo mode
+    // Test mode
+    const TEST_SECONDS_PER_MIN = 5;
 
     // ================== STORAGE ==================
-    const STORAGE_KEY = 'watchWithMe.progress.v9';
+    const STORAGE_KEY = 'watchWithMe.progress.v11';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ================== SCRIPTURE POOLS (KJV excerpts) ==================
+    // ================== SCRIPTURE POOLS (KJV snippets) ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -252,7 +253,7 @@
       favor:['favor','favour','opportunity','open door','acceptance']
     };
 
-    // ================== DOM HOOKS ==================
+    // DOM hooks
     const levelsEl = document.getElementById('levels');
     const journeyEl = document.getElementById('journey');
     const queryEl   = document.getElementById('query');
@@ -263,17 +264,18 @@
     const timerText = document.getElementById('timerText');
     const levelProgress = document.getElementById('levelProgress');
     const testMode  = document.getElementById('testMode');
+    const aiMode    = document.getElementById('aiMode');
 
     testMode.checked = !!progress.testMode;
 
-    // ================== STATE ==================
+    // STATE
     let currentLevel = 1;
     let session = null; // { level, topics, ctx, query, selectedRefs:Set, verses:[], blocks:[{paras:string[]}] }
     let countdown = null;
     let activeSeconds = 0;
     let cumulativeSeconds = 0;
 
-    // ================== UTILS ==================
+    // UTILS
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
     function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
     function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
@@ -319,37 +321,7 @@
       return out;
     }
 
-    // ================== PRAYER TEXT GENERATION ==================
-    function introParagraphs(level, topics, query, ctx){
-      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
-      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
-      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
-      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
-
-      const adoration = [
-        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
-        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
-        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
-      ];
-      const thanks = [
-        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
-        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
-      ];
-      const coreAsk = `I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`;
-
-      const arr = [];
-      arr.push(`${opener} ${adoration[0]}`);
-      if(level>1) arr.push(adoration[1]);
-      if(level>2) arr.push(adoration[2]);
-      arr.push(thanks[0]);
-      if(level>2) arr.push(thanks[1]);
-      arr.push(coreAsk);
-      arr.push('Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.');
-      if(level>=3) arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
-      if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
-      return arr; // 7–9 lines depending on level
-    }
-
+    // ===== LOCAL GENERATORS (fallback/offline) =====
     const deepLines = [
       'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
       'Strengthen my inner being by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
@@ -378,13 +350,38 @@
       wisdom:'Give me a wise and understanding heart that delights in Your counsel.',
       favor:'Surround me with favor as with a shield; open doors no one can shut.'
     };
-
+    function introParagraphs(level, topics, query, ctx){
+      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
+      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
+      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
+      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
+      const adoration = [
+        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
+        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
+        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
+      ];
+      const thanks = [
+        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
+        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
+      ];
+      const coreAsk = `I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`;
+      const arr = [];
+      arr.push(`${opener} ${adoration[0]}`);
+      if(level>1) arr.push(adoration[1]);
+      if(level>2) arr.push(adoration[2]);
+      arr.push(thanks[0]);
+      if(level>2) arr.push(thanks[1]);
+      arr.push(coreAsk);
+      arr.push('Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.');
+      if(level>=3) arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
+      if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
+      return arr;
+    }
     function generateParagraphs(count, level, topics){
-      // level scales the chance of “flavor” add-ons
       const result = [];
       for(let i=0;i<count;i++){
         let line = deepLines[Math.floor(Math.random()*deepLines.length)];
-        if(Math.random()<0.55 + (level*0.05)){ // more “power” at higher levels
+        if(Math.random()<0.55 + (level*0.05)){
           const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
           if(flavors.length && Math.random()<0.7){
             line += ' ' + flavors[Math.floor(Math.random()*flavors.length)];
@@ -395,7 +392,27 @@
       return result;
     }
 
-    // ================== RENDER ==================
+    // ====== AI GENERATION (optional, hardened) ======
+    async function aiGenerateParagraphs({query, level, topics, previousText, count=10}) {
+      try {
+        const res = await fetch('/api/generatePrayer', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ query, level, topics, previousText, count })
+        });
+        if(!res.ok) throw new Error(`API ${res.status}`);
+        const data = await res.json();
+        if(!data || !Array.isArray(data.paragraphs) || !data.paragraphs.length){
+          throw new Error('Bad AI payload');
+        }
+        return data;
+      } catch (e) {
+        console.warn('AI generation failed; using local generator:', e);
+        return { paragraphs: generateParagraphs(count, level, topics) };
+      }
+    }
+
+    // ===== RENDER =====
     function renderLevels(){
       levelsEl.innerHTML='';
       LEVELS.forEach(l=>{
@@ -410,7 +427,7 @@
         `;
         div.querySelector('button')?.addEventListener('click',()=>{
           currentLevel=l.id;
-          cumulativeSeconds = 0; // reset visible progress if user switches
+          cumulativeSeconds = 0;
           updateJourney();
         });
         levelsEl.appendChild(div);
@@ -422,26 +439,20 @@
       levelProgress.textContent = cumulativeSeconds>0 ? `Progress this level: ${fmt(cumulativeSeconds)} / ${fmt(targ)}` : '';
       journeyEl.textContent = `Current: ${L.name} — target ${L.targetMin} minutes. Each chunk adds 10 new prayer lines.`;
     }
-
+    function escapeHTML(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function renderPrayerHTML(sess){
-      // Flatten blocks into paragraphs with dividers; then scriptures; then closing
       const allParas = [];
       sess.blocks.forEach((block, idx)=>{
         if(idx>0) allParas.push('<div class="divider">─── ✝ ───</div>');
         block.paras.forEach(p=> allParas.push(`<p>${escapeHTML(p)}</p>`));
       });
-      // Scriptures
       const scriptLis = sess.verses.map(v=>`<li><em>${escapeHTML(v.ref)}</em> — ${escapeHTML(v.text)}</li>`).join('');
-      const scriptures =
-        `<div class="scriptures"><strong>Scripture to Stand On (KJV)</strong><ul>${scriptLis}</ul></div>`;
-      // Close
+      const scriptures = `<div class="scriptures"><strong>Scripture to Stand On (KJV)</strong><ul>${scriptLis}</ul></div>`;
       const closing = `<p><strong>In Jesus’ Name, amen.</strong></p>`;
       return allParas.join('') + scriptures + closing;
     }
 
-    function escapeHTML(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-    // ================== TIMER & PROGRESSION ==================
+    // ===== TIMERS & PROGRESSION =====
     function startChunkForLevel(level){
       const mins = chunkMin(level);
       startChunk(secondsForMinutes(mins));
@@ -465,7 +476,7 @@
           ring.classList.remove('live');
           timerText.textContent = 'Chunk complete. Press “More Prayer” to continue.';
           moreBtn.disabled = false;
-          moreBtn.classList.add('highlight'); // guide user to continue
+          moreBtn.classList.add('highlight');
         }
       },1000);
     }
@@ -491,69 +502,96 @@
       genBtn.disabled  = false;
     }
 
-    // ================== EVENTS ==================
+    // ===== EVENTS =====
     testMode.addEventListener('change',()=>{progress.testMode = testMode.checked; save(); updateJourney();});
 
-    genBtn.addEventListener('click', ()=>{
+    genBtn.addEventListener('click', async ()=>{
       const query = queryEl.value.trim();
       const topics = detectTopics(query);
       const ctx    = extractContext(query);
       const L      = LEVELS.find(l=>l.id===currentLevel);
 
-      // Select congruent verses
       const selectedRefs = new Set();
       const verses = pickVerses(topics, L.verseMin, L.verseMax, query, selectedRefs);
 
-      // Build first block: intro (7-9) + extra to reach 10
-      const block0 = introParagraphs(currentLevel, topics, query, ctx);
-      const needed = Math.max(0, 10 - block0.length);
-      const extras = generateParagraphs(needed, currentLevel, topics);
-      const firstParas = block0.concat(extras);
+      let firstParas = [];
+      if(document.getElementById('aiMode').checked){
+        const ai = await aiGenerateParagraphs({query, level: currentLevel, topics, previousText: '', count: 10});
+        firstParas = ai.paragraphs || [];
+        if(Array.isArray(ai.scriptures)){
+          ai.scriptures.forEach(s=>{
+            if(s && s.ref && s.text && !selectedRefs.has(s.ref)){
+              verses.push({ref:s.ref, text:s.text});
+              selectedRefs.add(s.ref);
+            }
+          });
+        }
+      }else{
+        const block0 = introParagraphs(currentLevel, topics, query, ctx);
+        const needed = Math.max(0, 10 - block0.length);
+        const extras = generateParagraphs(needed, currentLevel, topics);
+        firstParas = block0.concat(extras);
+      }
 
-      // Session
       session = {
         level: currentLevel,
         topics, ctx, query,
-        selectedRefs, verses:[...verses],
+        selectedRefs, verses: verses.slice(0, L.verseMax),
         blocks:[{ paras:firstParas }]
       };
 
-      // Render
       prayerEl.style.display='block';
       prayerEl.innerHTML = renderPrayerHTML(session);
 
-      // Controls
       moreBtn.style.display='inline-block';
       moreBtn.disabled = false;
       moreBtn.classList.remove('highlight');
 
-      // Start chunk
       startChunkForLevel(currentLevel);
     });
 
-    moreBtn.addEventListener('click', ()=>{
+    moreBtn.addEventListener('click', async ()=>{
       if(!session) return;
       const L = LEVELS.find(l=>l.id===session.level);
 
-      // Add +10 new paragraphs in a new block
-      const newBlock = { paras: generateParagraphs(10, session.level, session.topics) };
-      session.blocks.push(newBlock);
-
-      // Optionally add one new verse per chunk until cap
-      if(session.verses.length < L.verseMax){
-        const extra = pickVerses(session.topics, session.verses.length+1, session.verses.length+1, session.query, session.selectedRefs);
-        if(extra.length){ session.verses.push(extra[extra.length-1]); }
+      let newParas = [];
+      if(document.getElementById('aiMode').checked){
+        const previousText = session.blocks.map(b=>b.paras.join('\n')).join('\n\n');
+        const ai = await aiGenerateParagraphs({
+          query: session.query,
+          level: session.level,
+          topics: session.topics,
+          previousText,
+          count: 10
+        });
+        newParas = ai.paragraphs || [];
+        if(Array.isArray(ai.scriptures)){
+          for(const s of ai.scriptures){
+            if(session.verses.length>=L.verseMax) break;
+            if(s && s.ref && s.text && !session.selectedRefs.has(s.ref)){
+              session.verses.push({ref:s.ref, text:s.text});
+              session.selectedRefs.add(s.ref);
+            }
+          }
+        }
+      }else{
+        newParas = generateParagraphs(10, session.level, session.topics);
       }
 
-      // Re-render
+      session.blocks.push({ paras:newParas });
+
+      if(session.verses.length < L.verseMax){
+        const add = pickVerses(session.topics, session.verses.length+1, session.verses.length+1, session.query, session.selectedRefs);
+        if(add.length) session.verses.push(add[add.length-1]);
+      }
+
       prayerEl.innerHTML = renderPrayerHTML(session);
 
-      // Restart chunk
       moreBtn.classList.remove('highlight');
       startChunkForLevel(session.level);
     });
 
-    // ================== BOOT ==================
+    // BOOT
     function boot(){
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
