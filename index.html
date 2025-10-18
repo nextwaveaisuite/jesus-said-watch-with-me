@@ -22,10 +22,12 @@
     .badge{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#08121e;padding:6px 10px;border-radius:999px;font-weight:700}
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     @media(min-width:860px){.grid{grid-template-columns:2fr 1fr}}
+
     .card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0));border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(6px);border-radius:16px;padding:16px}
     h2,h3{margin:0 0 8px 0}
     p{margin:0 0 10px 0;color:var(--ink)}
     small,.muted{color:var(--muted)}
+
     .lord blockquote{margin:8px 0;padding:12px 14px;border-left:3px solid var(--brand);background:rgba(255,255,255,0.03);border-radius:8px}
 
     .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -40,6 +42,7 @@
 
     .searchbar{display:flex;gap:8px;margin:8px 0}
     .searchbar input{flex:1;background:#0c1426;border:1px solid rgba(255,255,255,0.1);color:var(--ink);padding:10px;border-radius:10px}
+    .searchbar buttons{display:flex;gap:8px}
     .searchbar button{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#06101d;font-weight:800;cursor:pointer}
 
     .timer{display:flex;align-items:center;gap:10px;margin-top:8px}
@@ -64,7 +67,6 @@
     </header>
 
     <div class="grid">
-      <!-- Left column -->
       <section class="card lord">
         <h2>The Lord’s Prayer (Always Visible)</h2>
         <blockquote>
@@ -79,7 +81,6 @@
         <div class="muted">Tap a level below, search your need, and begin.</div>
       </section>
 
-      <!-- Right column: progress -->
       <aside class="card">
         <h3>Your Journey</h3>
         <p class="muted" id="journey"></p>
@@ -91,7 +92,7 @@
       <h3>Search for a prayer</h3>
       <div class="searchbar">
         <input id="query" placeholder="e.g., healing for my mother, peace at work, guidance for decisions" />
-        <div style="display:flex; gap:8px">
+        <div class="buttons">
           <button id="genBtn">Generate</button>
           <button id="moreBtn" style="display:none">Load More (Continue in Prayer)</button>
         </div>
@@ -106,125 +107,85 @@
 
       <div style="margin-top:10px;display:flex;gap:8px">
         <button id="startBtn" style="display:none" class="pill">Start session</button>
-        <!-- 'Finish' stays for manual finishing if needed, but auto-advance happens on timer end -->
         <button id="finishBtn" style="display:none" class="pill">Mark complete</button>
       </div>
     </section>
   </div>
 
   <script>
-    // ------------------ App State ------------------
+    // ------------------ Config & Persistent State ------------------
     const LEVELS = [
       { id:1, name:'Level 1', minutes:15, verseMin:1, verseMax:3, sections:['Adoration','Confession','Thanksgiving','Petition'] },
       { id:2, name:'Level 2', minutes:30, verseMin:3, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition'] },
       { id:3, name:'Level 3', minutes:45, verseMin:5, verseMax:7, sections:['Adoration','Thanksgiving','Intercession','Warfare','Word Meditation','Declarations','Petition'] },
       { id:4, name:'Level 4', minutes:60, verseMin:7, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
-
-    const STORAGE_KEY = 'watchWithMe.progress.v3';
-    const progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const STORAGE_KEY = 'watchWithMe.progress.v4';
+    let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // Scripture pools (KJV excerpts; public domain)
+    // ------------------ Scripture Pools (KJV excerpts) ------------------
     const VERSES = {
-      healing: [
-        {ref:'James 5:14-15', text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
-        {ref:'Psalm 103:2-3', text:'Bless the LORD... who healeth all thy diseases;'},
-        {ref:'Isaiah 53:5', text:'...and with his stripes we are healed.'},
-        {ref:'Jeremiah 30:17', text:'For I will restore health unto thee...'},
-        {ref:'3 John 1:2', text:'Beloved, I wish above all things that thou mayest prosper and be in health...'},
-        {ref:'Mark 16:18', text:'...they shall lay hands on the sick, and they shall recover.'}
-      ],
-      anxiety: [
-        {ref:'Philippians 4:6-7', text:'Be careful for nothing... And the peace of God... shall keep your hearts and minds...'},
-        {ref:'1 Peter 5:7', text:'Casting all your care upon him; for he careth for you.'},
-        {ref:'Matthew 11:28-30', text:'Come unto me... and I will give you rest.'},
-        {ref:'Psalm 94:19', text:'In the multitude of my thoughts within me thy comforts delight my soul.'}
-      ],
-      peace: [
-        {ref:'John 14:27', text:'Peace I leave with you, my peace I give unto you...'},
-        {ref:'Psalm 29:11', text:'The LORD... will bless his people with peace.'},
-        {ref:'Numbers 6:24-26', text:'The LORD bless thee... and give thee peace.'}
-      ],
-      guidance: [
-        {ref:'James 1:5', text:'If any of you lack wisdom, let him ask of God...'},
-        {ref:'Proverbs 3:5-6', text:'Trust in the LORD with all thine heart... and he shall direct thy paths.'},
-        {ref:'Psalm 32:8', text:'I will instruct thee and teach thee... I will guide thee with mine eye.'},
-        {ref:'Psalm 119:105', text:'Thy word is a lamp unto my feet, and a light unto my path.'}
-      ],
-      provision: [
-        {ref:'Matthew 6:33', text:'But seek ye first the kingdom of God... and all these things shall be added unto you.'},
-        {ref:'Philippians 4:19', text:'But my God shall supply all your need...'},
-        {ref:'Psalm 37:25', text:'...yet have I not seen the righteous forsaken, nor his seed begging bread.'}
-      ],
-      employment: [
-        {ref:'Colossians 3:23', text:'And whatsoever ye do, do it heartily, as to the Lord...'},
-        {ref:'Proverbs 22:29', text:'Seest thou a man diligent in his business? he shall stand before kings...'},
-        {ref:'Psalm 90:17', text:'...establish thou the work of our hands...'}
-      ],
-      debt: [
-        {ref:'Romans 13:8', text:'Owe no man any thing, but to love one another...'},
-        {ref:'Proverbs 22:7', text:'...the borrower is servant to the lender.'},
-        {ref:'Psalm 37:21', text:'The wicked borroweth, and payeth not again...'}
-      ],
-      forgiveness: [
-        {ref:'1 John 1:9', text:'If we confess our sins, he is faithful and just to forgive...'},
-        {ref:'Matthew 6:14-15', text:'For if ye forgive men their trespasses...'},
-        {ref:'Psalm 51:10', text:'Create in me a clean heart, O God...'}
-      ],
-      reconciliation: [
-        {ref:'Ephesians 4:32', text:'And be ye kind... forgiving one another...'},
-        {ref:'Romans 12:18', text:'If it be possible... live peaceably with all men.'},
-        {ref:'Matthew 5:9', text:'Blessed are the peacemakers...'}
-      ],
-      marriage: [
-        {ref:'Ephesians 5:25', text:'Husbands, love your wives...'},
-        {ref:'Ephesians 5:33', text:'...and the wife see that she reverence her husband.'},
-        {ref:'1 Corinthians 13:4-7', text:'Charity suffereth long, and is kind...'}
-      ],
-      children: [
-        {ref:'Proverbs 22:6', text:'Train up a child in the way he should go...'},
-        {ref:'Ephesians 6:1-4', text:'Children, obey your parents... And, ye fathers, provoke not your children to wrath...'},
-        {ref:'Psalm 127:3', text:'Lo, children are an heritage of the LORD...'}
-      ],
-      protection: [
-        {ref:'Psalm 91:1-2', text:'He that dwelleth in the secret place...'},
-        {ref:'Isaiah 41:10', text:'Fear thou not; for I am with thee...'},
-        {ref:'2 Thessalonians 3:3', text:'But the Lord is faithful... and keep you from evil.'}
-      ],
-      travel: [
-        {ref:'Psalm 121:8', text:'The LORD shall preserve thy going out and thy coming in...'},
-        {ref:'Proverbs 3:23', text:'Then shalt thou walk in thy way safely...'}
-      ],
-      grief: [
-        {ref:'Psalm 34:18', text:'The LORD is nigh unto them that are of a broken heart...'},
-        {ref:'Matthew 5:4', text:'Blessed are they that mourn...'},
-        {ref:'Revelation 21:4', text:'And God shall wipe away all tears...'}
-      ],
-      salvation: [
-        {ref:'Romans 10:9', text:'...confess with thy mouth the Lord Jesus... thou shalt be saved.'},
-        {ref:'John 3:16', text:'For God so loved the world...'},
-        {ref:'Acts 4:12', text:'Neither is there salvation in any other...'}
-      ],
-      purpose: [
-        {ref:'Ephesians 2:10', text:'For we are his workmanship...'},
-        {ref:'Jeremiah 29:11', text:'For I know the thoughts that I think toward you...'},
-        {ref:'Romans 8:28', text:'And we know that all things work together for good...'}
-      ],
-      spiritual_warfare: [
-        {ref:'Ephesians 6:10-18', text:'Put on the whole armour of God...'},
-        {ref:'2 Corinthians 10:4-5', text:'...mighty through God to the pulling down of strong holds...'},
-        {ref:'Luke 10:19', text:'Behold, I give unto you power...'}
-      ],
-      wisdom: [
-        {ref:'James 3:17', text:'But the wisdom that is from above is first pure, then peaceable...'},
-        {ref:'Colossians 1:9', text:'...filled with the knowledge of his will in all wisdom...'}
-      ],
-      favor: [
-        {ref:'Psalm 5:12', text:'For thou, LORD, wilt bless the righteous; with favour wilt thou compass him as with a shield.'},
-        {ref:'Proverbs 3:4', text:'So shalt thou find favour and good understanding in the sight of God and man.'}
-      ]
+      healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
+               {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
+               {ref:'Isaiah 53:5',text:'...and with his stripes we are healed.'},
+               {ref:'Jeremiah 30:17',text:'For I will restore health unto thee...'},
+               {ref:'3 John 1:2',text:'Beloved, I wish above all things that thou mayest prosper and be in health...'},
+               {ref:'Mark 16:18',text:'...they shall lay hands on the sick, and they shall recover.'}],
+      anxiety:[{ref:'Philippians 4:6-7',text:'Be careful for nothing... And the peace of God... shall keep your hearts and minds...'},
+               {ref:'1 Peter 5:7',text:'Casting all your care upon him; for he careth for you.'},
+               {ref:'Matthew 11:28-30',text:'Come unto me... and I will give you rest.'},
+               {ref:'Psalm 94:19',text:'In the multitude of my thoughts within me thy comforts delight my soul.'}],
+      peace:[{ref:'John 14:27',text:'Peace I leave with you, my peace I give unto you...'},
+             {ref:'Psalm 29:11',text:'The LORD... will bless his people with peace.'},
+             {ref:'Numbers 6:24-26',text:'The LORD bless thee... and give thee peace.'}],
+      guidance:[{ref:'James 1:5',text:'If any of you lack wisdom, let him ask of God...'},
+                {ref:'Proverbs 3:5-6',text:'Trust in the LORD with all thine heart... and he shall direct thy paths.'},
+                {ref:'Psalm 32:8',text:'I will instruct thee and teach thee... I will guide thee with mine eye.'},
+                {ref:'Psalm 119:105',text:'Thy word is a lamp unto my feet, and a light unto my path.'}],
+      provision:[{ref:'Matthew 6:33',text:'But seek ye first the kingdom of God... and all these things shall be added unto you.'},
+                 {ref:'Philippians 4:19',text:'But my God shall supply all your need...'},
+                 {ref:'Psalm 37:25',text:'...yet have I not seen the righteous forsaken, nor his seed begging bread.'}],
+      employment:[{ref:'Colossians 3:23',text:'And whatsoever ye do, do it heartily, as to the Lord...'},
+                  {ref:'Proverbs 22:29',text:'Seest thou a man diligent in his business? he shall stand before kings...'},
+                  {ref:'Psalm 90:17',text:'...establish thou the work of our hands...'}],
+      debt:[{ref:'Romans 13:8',text:'Owe no man any thing, but to love one another...'},
+            {ref:'Proverbs 22:7',text:'...the borrower is servant to the lender.'},
+            {ref:'Psalm 37:21',text:'The wicked borroweth, and payeth not again...'}],
+      forgiveness:[{ref:'1 John 1:9',text:'If we confess our sins, he is faithful and just to forgive...'},
+                   {ref:'Matthew 6:14-15',text:'For if ye forgive men their trespasses...'},
+                   {ref:'Psalm 51:10',text:'Create in me a clean heart, O God...'}],
+      reconciliation:[{ref:'Ephesians 4:32',text:'And be ye kind... forgiving one another...'},
+                      {ref:'Romans 12:18',text:'If it be possible... live peaceably with all men.'},
+                      {ref:'Matthew 5:9',text:'Blessed are the peacemakers...'}],
+      marriage:[{ref:'Ephesians 5:25',text:'Husbands, love your wives...'},
+                {ref:'Ephesians 5:33',text:'...and the wife see that she reverence her husband.'},
+                {ref:'1 Corinthians 13:4-7',text:'Charity suffereth long, and is kind...'}],
+      children:[{ref:'Proverbs 22:6',text:'Train up a child in the way he should go...'},
+                {ref:'Ephesians 6:1-4',text:'Children, obey your parents... And, ye fathers, provoke not your children to wrath...'},
+                {ref:'Psalm 127:3',text:'Lo, children are an heritage of the LORD...'}],
+      protection:[{ref:'Psalm 91:1-2',text:'He that dwelleth in the secret place...'},
+                  {ref:'Isaiah 41:10',text:'Fear thou not; for I am with thee...'},
+                  {ref:'2 Thessalonians 3:3',text:'But the Lord is faithful... and keep you from evil.'}],
+      travel:[{ref:'Psalm 121:8',text:'The LORD shall preserve thy going out and thy coming in...'},
+              {ref:'Proverbs 3:23',text:'Then shalt thou walk in thy way safely...'}],
+      grief:[{ref:'Psalm 34:18',text:'The LORD is nigh unto them that are of a broken heart...'},
+             {ref:'Matthew 5:4',text:'Blessed are they that mourn...'},
+             {ref:'Revelation 21:4',text:'And God shall wipe away all tears...'}],
+      salvation:[{ref:'Romans 10:9',text:'...confess with thy mouth the Lord Jesus... thou shalt be saved.'},
+                 {ref:'John 3:16',text:'For God so loved the world...'},
+                 {ref:'Acts 4:12',text:'Neither is there salvation in any other...'}],
+      purpose:[{ref:'Ephesians 2:10',text:'For we are his workmanship...'},
+               {ref:'Jeremiah 29:11',text:'For I know the thoughts that I think toward you...'},
+               {ref:'Romans 8:28',text:'And we know that all things work together for good...'}],
+      spiritual_warfare:[{ref:'Ephesians 6:10-18',text:'Put on the whole armour of God...'},
+                         {ref:'2 Corinthians 10:4-5',text:'...mighty through God to the pulling down of strong holds...'},
+                         {ref:'Luke 10:19',text:'Behold, I give unto you power...'}],
+      wisdom:[{ref:'James 3:17',text:'But the wisdom that is from above is first pure, then peaceable...'},
+              {ref:'Colossians 1:9',text:'...filled with the knowledge of his will in all wisdom...'}],
+      favor:[{ref:'Psalm 5:12',text:'For thou, LORD, wilt bless the righteous; with favour wilt thou compass him as with a shield.'},
+             {ref:'Proverbs 3:4',text:'So shalt thou find favour and good understanding in the sight of God and man.'}]
     };
 
     const KEYWORDS = {
@@ -249,7 +210,7 @@
       favor:['favor','favour','opportunity','open door','acceptance']
     };
 
-    // ------------------ UI Build ------------------
+    // ------------------ DOM ------------------
     const levelsEl = document.getElementById('levels');
     const journeyEl = document.getElementById('journey');
     const queryEl = document.getElementById('query');
@@ -262,18 +223,20 @@
     const timerText = document.getElementById('timerText');
     const testMode = document.getElementById('testMode');
 
-    let currentLevel = 1;
-    let activeSeconds = 0; let countdown = null;
-
-    const progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    if(!progress.completedLevels) progress.completedLevels = [];
-    if(progress.testMode===undefined) progress.testMode = false;
     testMode.checked = !!progress.testMode;
 
-    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+    // ------------------ State ------------------
+    let currentLevel = 1;
+    let activeSeconds = 0;
+    let countdown = null;
 
+    // session = { level, topics, ctx, query, selectedRefs:Set, verses:[], baseParts:{parts, vList, topicLine}, extensions:[] }
+    let session = null;
+
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
     function unlocked(levelId){ return levelId===1 || progress.completedLevels.includes(levelId-1); }
 
+    // ------------------ UI ------------------
     function renderLevels(){
       levelsEl.innerHTML = '';
       LEVELS.forEach(l=>{
@@ -292,7 +255,6 @@
         levelsEl.appendChild(div);
       });
     }
-
     function updateJourney(){
       const l = LEVELS.find(x=>x.id===currentLevel);
       journeyEl.textContent = `Current: ${l.name} — ${l.minutes} minutes. Complete this level to unlock the next.`;
@@ -306,21 +268,14 @@
         .split(/\s+/).filter(t=>t && t.length>2 && !['the','and','for','with','this','that','have','from','your','you','our','her','him','his','she','they','them','are','was','will','not'].includes(t));
     }
     function extractContext(text){
-      const t = text||'';
-      const rels = ['me','my','mother','mom','father','dad','wife','husband','son','daughter','child','children','friend','brother','sister','boss','coworker','niece','nephew','grandma','grandpa'];
-      const words = t.split(/\s+/);
-      let target = null, name = null;
+      const rels=['me','my','mother','mom','father','dad','wife','husband','son','daughter','child','children','friend','brother','sister','boss','coworker','niece','nephew','grandma','grandpa'];
+      const words=(text||'').split(/\s+/);
+      let target=null,name=null;
       for(let i=0;i<words.length;i++){
-        const w = words[i].toLowerCase().replace(/[^a-z]/g,'');
-        if(rels.includes(w)){
-          target = w;
-          const next = words[i+1];
-          if(next && /^[A-Z][a-z'-]+$/.test(next)) name = next;
-          break;
-        }
+        const w=words[i].toLowerCase().replace(/[^a-z]/g,'');
+        if(rels.includes(w)){ target=w; const next=words[i+1]; if(next && /^[A-Z][a-z'-]+$/.test(next)) name=next; break; }
       }
-      const targetText = target ? (name? `${target} ${name}` : target) : null;
-      return { target, name, targetText };
+      return { targetText: target ? (name? `${target} ${name}`:target) : null };
     }
     function detectTopics(text){
       const q=(text||'').toLowerCase(); const scores={};
@@ -336,35 +291,230 @@
       const pools = topics.flatMap(t=> VERSES[t] || []);
       const base = pools.length? pools : VERSES['guidance'];
       const tokens = tokenize(query);
-      // score by token overlap
       const scored = base.map(v=>{
-        const t = (v.text + ' ' + v.ref).toLowerCase();
+        const t = (v.text+' '+v.ref).toLowerCase();
         const score = tokens.reduce((acc,tk)=> acc + (t.includes(tk)?1:0), 0);
         return { v, score };
       }).sort((a,b)=> b.score - a.score);
-      // prefer not-yet-used refs first
-      const ordered = scored.sort((a,b)=>{
-        const aNew = alreadyRefs.has(a.v.ref)?1:0;
-        const bNew = alreadyRefs.has(b.v.ref)?1:0;
-        return aNew - bNew || (b.score - a.score);
+
+      // prefer unused refs first, then score
+      const ordered = scored.slice().sort((a,b)=>{
+        const aUsed = alreadyRefs.has(a.v.ref), bUsed = alreadyRefs.has(b.v.ref);
+        if(aUsed!==bUsed) return aUsed - bUsed; // unused first
+        return b.score - a.score;
       });
+
       const targetN = Math.min(base.length, Math.max(min, Math.min(max, base.length)));
-      const chosen=[];
-      for (const item of ordered){
-        if(chosen.length>=targetN) break;
-        if(!alreadyRefs.has(item.v.ref)){ chosen.push(item.v); alreadyRefs.add(item.v.ref); }
+      const out=[];
+      for(const item of ordered){
+        if(out.length>=targetN) break;
+        if(!alreadyRefs.has(item.v.ref)){ out.push(item.v); alreadyRefs.add(item.v.ref); }
       }
-      // if still short (e.g., not enough unique), fill from top
-      let i=0;
-      while(chosen.length<targetN && i<scored.length){
-        const cand=scored[i++].v;
-        if(!alreadyRefs.has(cand.ref)){ chosen.push(cand); alreadyRefs.add(cand.ref); }
-      }
-      return chosen;
+      return out;
     }
 
-    // ------------------ Prayer builder ------------------
+    // ------------------ Prayer assembly ------------------
     function makeBasePrayerSections(level, topics, verses, query, ctx){
       const L = LEVELS.find(l=>l.id===level);
       const opener = ['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
-      const who = ctx?.targ
+      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
+      const topicNames = topics.map(t=>t.replace('_',' ')).join(' & ');
+      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
+
+      const parts = [];
+      parts.push(`**Adoration**\n${opener} You are holy, righteous, and faithful. Your Name is above every name.`);
+
+      if(L.sections.includes('Confession')){
+        parts.push(`**Confession**\nSearch me and know my heart. Forgive me where I have fallen short in word, thought, and deed; cleanse me and renew a right spirit within me (Ps 51:10).`);
+      }
+
+      parts.push(`**Thanksgiving**\nThank You for Your steadfast love and for hearing us when we call. Thank You for the cross and the hope we have in Christ.`);
+
+      if(L.sections.includes('Intercession') || L.sections.includes('Strategic Intercession')){
+        parts.push(`**Intercession**\nI lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`);
+      }
+
+      if(L.sections.includes('Warfare')){
+        parts.push(`**Warfare**\nIn the authority of Jesus, I resist the enemy and every lie. I put on the whole armour of God (Eph 6). Let every stronghold and accusation fall (2 Cor 10:4-5).`);
+      }
+
+      if(L.sections.includes('Word Meditation')){
+        parts.push(`**Word Meditation**\nYour Word is life and light (Ps 119:105). I receive Your promises by faith and ask the Holy Spirit to teach, comfort, and guide.`);
+      }
+
+      if(L.sections.includes('Listening')){
+        parts.push('**Listening**\n(Quiet your heart for a minute and pray: “Speak, Lord, for Your servant hears.” Wait with expectancy.)');
+      }
+
+      if(L.sections.includes('Declarations')){
+        parts.push('**Declarations**\nI agree with Your promises and speak life: Your Word will not return void. Jesus is Lord over this situation. Hope arises; peace reigns; Your kingdom advances.');
+      }
+
+      parts.push(`**Petition**\n${topicLine} Let Your kingdom come and Your will be done. Grant wisdom, courage, provision, and steadfast faith. Surround us with Your peace.`);
+
+      if(L.sections.includes('Blessing & Commission')){
+        parts.push('**Blessing & Commission**\nBless me to walk in love today. Send me as a peacemaker and a witness of Christ. May the words of my mouth and the meditation of my heart be acceptable in Your sight.');
+      }
+
+      return { parts, topicLine };
+    }
+
+    function buildPrayerMarkdown(baseParts, extensions, verses){
+      const scriptureBlock = `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
+      const closing = ['In Jesus’ Name, amen.','Through Jesus Christ our Lord, amen.','In the mighty Name of Jesus, amen.'][Math.floor(Math.random()*3)];
+      return [...baseParts.parts, ...extensions, scriptureBlock, closing].join('\n\n');
+    }
+
+    function generateContinuation(topics){
+      const lines = [
+        'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
+        'Strengthen my inner man by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
+        'I surrender the parts of me that resist You. Form Christ in me—thought by thought, breath by breath.',
+        'Let Your love cast out fear. Fill this space with Your presence until my heart rests in Your promises.',
+        'Give me grace to persevere in prayer. Not by might nor by power, but by Your Spirit, O Lord.',
+        'As I wait on You, renew my strength. Lift my eyes above the storm to the One who speaks, “Peace, be still.”',
+        'Open my ears to wisdom and my eyes to Your paths. Make my steps steady upon Your Word.'
+      ];
+      const topicPhrases = {
+        healing:'Release Your healing virtue and make whole in body, soul, and spirit.',
+        anxiety:'Speak Your perfect peace over every racing thought and heavy breath.',
+        peace:'Let the peace of Christ rule in my heart and every room I enter.',
+        guidance:'Order my steps and confirm Your way with wisdom from above.',
+        provision:'Provide according to Your riches in glory, and teach contentment in every season.',
+        employment:'Establish the work of my hands and grant favor with those I serve.',
+        forgiveness:'Wash me and restore me, that I may walk with clean hands and a pure heart.',
+        protection:'Be a hedge around me; guard my going out and my coming in.',
+        grief:'Comfort me in sorrow and turn my mourning into songs of hope.',
+        spiritual_warfare:'By the cross, disarm the schemes of the enemy and let truth prevail.',
+        salvation:'Draw hearts to Jesus; open the door of faith and breathe new life.',
+        purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
+        wisdom:'Give me a wise and understanding heart that delights in Your counsel.'
+      };
+      const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
+      const flavor = topics.map(t=>topicPhrases[t]).filter(Boolean);
+      return `${pick(lines)} ${pick(lines)} ${flavor.length? pick(flavor):''}`.trim();
+    }
+
+    // ------------------ Timers & gating ------------------
+    function levelSeconds(level){
+      const minutes = LEVELS.find(l=>l.id===level).minutes;
+      return progress.testMode ? Math.max(60, Math.round(minutes*3)) : minutes*60;
+    }
+    function startTimer(){
+      if(!session) return;
+      clearInterval(countdown);
+      activeSeconds = levelSeconds(session.level);
+      ring.classList.add('live');
+      updateTimerText();
+      moreBtn.disabled = false; // allow deepening during timer
+      countdown = setInterval(()=>{
+        activeSeconds--; updateTimerText();
+        if(activeSeconds<=0){
+          clearInterval(countdown);
+          ring.classList.remove('live');
+          timerText.textContent = 'Session complete. Advancing to next level.';
+          // Lock deepening
+          moreBtn.disabled = true;
+          genBtn.disabled = true;
+          startBtn.disabled = true;
+
+          // Mark complete and unlock next
+          if(!progress.completedLevels.includes(session.level)){
+            progress.completedLevels.push(session.level); save();
+          }
+          renderLevels();
+
+          // Auto-advance selection (manual start next)
+          if(session.level < 4){
+            currentLevel = session.level + 1;
+            updateJourney();
+          }
+        }
+      },1000);
+    }
+    function updateTimerText(){
+      const m = Math.floor(activeSeconds/60).toString();
+      const s = Math.floor(activeSeconds%60).toString().padStart(2,'0');
+      timerText.textContent = activeSeconds>0?`Time remaining: ${m}:${s}`:'No session active.';
+    }
+
+    // ------------------ Events ------------------
+    testMode.addEventListener('change',()=>{progress.testMode=testMode.checked; save();});
+
+    genBtn.addEventListener('click',()=>{
+      const q = queryEl.value.trim();
+      const topics = detectTopics(q);
+      const ctx = extractContext(q);
+      const L = LEVELS.find(l=>l.id===currentLevel);
+
+      const selectedRefs = new Set();
+      const verses = pickVerses(topics, L.verseMin, L.verseMax, q, selectedRefs);
+      const baseParts = makeBasePrayerSections(currentLevel, topics, verses, q, ctx);
+
+      session = { level: currentLevel, topics, ctx, query:q, selectedRefs, verses:[...verses], baseParts, extensions: [] };
+
+      const md = buildPrayerMarkdown(baseParts, session.extensions, session.verses);
+      prayerEl.style.display='block';
+      prayerEl.innerHTML = markdownToHTML(md);
+
+      startBtn.style.display='inline-flex';
+      startBtn.disabled = false;
+
+      finishBtn.style.display='inline-flex';
+      finishBtn.disabled = false;
+
+      moreBtn.style.display='inline-block';
+      moreBtn.disabled = true; // enabled when timer starts
+
+      ring.classList.remove('live');
+      clearInterval(countdown);
+      activeSeconds = 0; updateTimerText();
+
+      genBtn.disabled = false;
+    });
+
+    startBtn.addEventListener('click', startTimer);
+
+    moreBtn.addEventListener('click', ()=>{
+      if(!session || activeSeconds<=0) return; // only during active session
+      // extend prayer
+      const ext = generateContinuation(session.topics);
+      session.extensions.push(ext);
+
+      // try to add another verse (within level cap)
+      const L = LEVELS.find(l=>l.id===session.level);
+      if(session.verses.length < L.verseMax){
+        const extra = pickVerses(session.topics, session.verses.length+1, session.verses.length+1, session.query, session.selectedRefs);
+        if(extra.length){
+          session.verses.push(extra[extra.length-1]);
+        }
+      }
+      const md = buildPrayerMarkdown(session.baseParts, session.extensions, session.verses);
+      prayerEl.innerHTML = markdownToHTML(md);
+    });
+
+    finishBtn.addEventListener('click',()=>{
+      if(session && !progress.completedLevels.includes(session.level)){
+        progress.completedLevels.push(session.level); save();
+      }
+      clearInterval(countdown);
+      ring.classList.remove('live');
+      activeSeconds=0; updateTimerText();
+      moreBtn.disabled = true;
+
+      renderLevels();
+      if(session && session.level<4){
+        currentLevel = session.level+1;
+        updateJourney();
+      } else {
+        updateJourney();
+      }
+    });
+
+    // ------------------ Markdown tiny renderer ------------------
+    function markdownToHTML(md){
+      return md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
+    }
+  </script>
+</body>
+</html>
