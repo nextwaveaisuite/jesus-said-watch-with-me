@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jesus said, Watch With Me</title>
+  <style>
+    :root{
+      --bg:#0b1220;--card:#111a2e;--ink:#e6ecff;--muted:#a8b3d1;--brand:#4ea8ff;--brand2:#9ad4ff;--good:#2ecc71;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,"Segoe UI",Roboto,Inter,Arial,Helvetica,sans-serif;background:radial-gradient(1200px 800px at 80% -10%,#173050,#0b1220),linear-gradient(180deg,#0b1220,#0b1220);color:var(--ink)}
+    .wrap{max-width:1000px;margin:0 auto;padding:24px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .title{font-weight:800;letter-spacing:0.2px;font-size:clamp(1.2rem,3vw,1.8rem);}
+    .subtitle{color:var(--muted);font-size:0.95rem}
+    .badge{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#08121e;padding:6px 10px;border-radius:999px;font-weight:700}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:860px){.grid{grid-template-columns:2fr 1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0));border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(6px);border-radius:16px;padding:16px}
+    h2,h3{margin:0 0 8px 0}
+    p{margin:0 0 10px 0;color:var(--ink)}
+    small,.muted{color:var(--muted)}
+    .lord blockquote{margin:8px 0;padding:12px 14px;border-left:3px solid var(--brand);background:rgba(255,255,255,0.03);border-radius:8px}
+    .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(min-width:720px){.levels{grid-template-columns:repeat(4,1fr)}}
+    .level{padding:14px;border-radius:14px;background:linear-gradient(180deg,#0f1b31,#0e1627);border:1px solid rgba(255,255,255,0.08);position:relative}
+    .level h4{margin:0 0 6px 0}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;background:rgba(255,255,255,0.06)}
+    .lock{position:absolute;top:10px;right:10px;font-size:12px;color:var(--muted)}
+    .level button{margin-top:10px;width:100%;padding:10px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#05101d;font-weight:800;cursor:pointer}
+    .level.locked{opacity:0.55;filter:saturate(.6)}
+    .done{color:var(--good);font-weight:700}
+    .searchbar{display:flex;gap:8px;margin:8px 0}
+    .searchbar input{flex:1;background:#0c1426;border:1px solid rgba(255,255,255,0.1);color:var(--ink);padding:10px;border-radius:10px}
+    .searchbar button{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#06101d;font-weight:800;cursor:pointer}
+    .timer{display:flex;align-items:center;gap:10px;margin-top:8px}
+    .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);outline:1px solid rgba(255,255,255,0.15)}
+    .ring.live{background:var(--good)}
+    .prayer{white-space:pre-wrap;line-height:1.55;background:#0c1426;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px}
+    .foot{margin-top:18px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px;justify-content:space-between}
+    .toggle{display:flex;align-items:center;gap:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="badge">Jesus said, Watch With Me</div>
+        <div class="title">Grow from 15 minutes to one hour in prayer</div>
+        <div class="subtitle">“What, could ye not watch with me one hour?” — Matthew 26:40 (KJV)</div>
+      </div>
+      <div class="toggle"><input type="checkbox" id="testMode"/> <label for="testMode" class="muted">Test mode (short timers)</label></div>
+    </header>
+
+    <div class="grid">
+      <section class="card lord">
+        <h2>The Lord’s Prayer</h2>
+        <blockquote>
+          <p><strong>Matthew 6:9–13 (KJV)</strong></p>
+          <p>Our Father which art in heaven, Hallowed be thy name.<br/>
+          Thy kingdom come. Thy will be done in earth, as it is in heaven.<br/>
+          Give us this day our daily bread.<br/>
+          And forgive us our debts, as we forgive our debtors.<br/>
+          And lead us not into temptation, but deliver us from evil:<br/>
+          For thine is the kingdom, and the power, and the glory, for ever. Amen.</p>
+        </blockquote>
+      </section>
+
+      <aside class="card">
+        <h3>Your Journey</h3>
+        <p class="muted" id="journey"></p>
+        <div class="levels" id="levels"></div>
+      </aside>
+    </div>
+
+    <section class="card">
+      <h3>Search for a Prayer</h3>
+      <div class="searchbar">
+        <input id="query" placeholder="e.g., healing for my mother, peace at work, guidance for decisions" />
+        <button id="genBtn">Generate</button>
+      </div>
+      <div class="timer">
+        <div id="ring" class="ring"></div>
+        <div id="timerText" class="muted">No session active.</div>
+      </div>
+      <div id="prayer" class="prayer" style="margin-top:12px;display:none"></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button id="startBtn" style="display:none" class="pill">Start session</button>
+        <button id="finishBtn" style="display:none" class="pill">Mark complete</button>
+      </div>
+    </section>
+
+    <div class="foot">
+      <span>Free for everyone • Scripture: KJV (public domain) • No AI key required</span>
+      <span class="muted">Tip: Use test mode to try fast timers.</span>
+    </div>
+  </div>
+
+  <script>
+    const LEVELS=[
+      {id:1,name:'Level 1',minutes:15,verseMin:1,verseMax:3,sections:['Adoration','Confession','Thanksgiving','Petition']},
+      {id:2,name:'Level 2',minutes:30,verseMin:3,verseMax:5,sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition']},
+      {id:3,name:'Level 3',minutes:45,verseMin:5,verseMax:7,sections:['Adoration','Thanksgiving','Intercession','Warfare','Declarations','Petition']},
+      {id:4,name:'Level 4',minutes:60,verseMin:7,verseMax:10,sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Blessing & Commission']},
+    ];
+    const STORAGE_KEY='watchWithMe.progress.v1';
+    const progress=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+    if(!progress.completedLevels)progress.completedLevels=[];
+    if(progress.testMode===undefined)progress.testMode=false;
+    const VERSES={
+      healing:[{ref:'James 5:15',text:'And the prayer of faith shall save the sick...'},
+        {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
+        {ref:'Isaiah 53:5',text:'...with his stripes we are healed.'}],
+      peace:[{ref:'Philippians 4:6-7',text:'Be careful for nothing...'},
+        {ref:'John 14:27',text:'Peace I leave with you...'},
+        {ref:'Psalm 29:11',text:'The LORD... will bless his people with peace.'}],
+      guidance:[{ref:'James 1:5',text:'If any lack wisdom, let him ask of God...'},
+        {ref:'Proverbs 3:5-6',text:'Trust in the LORD with all thine heart...'},
+        {ref:'Psalm 32:8',text:'I will instruct thee and teach thee...'}],
+    };
+    const KEYWORDS={healing:['heal','sick','disease','pain'],peace:['peace','calm','conflict'],guidance:['wisdom','direction','decision','path']};
+    const qEl=document.getElementById('query');const pEl=document.getElementById('prayer');const gen=document.getElementById('genBtn');
+    const start=document.getElementById('startBtn');const finish=document.getElementById('finishBtn');const ring=document.getElementById('ring');
+    const timerText=document.getElementById('timerText');const levelsEl=document.getElementById('levels');const journey=document.getElementById('journey');
+    const test=document.getElementById('testMode');test.checked=progress.testMode;let currentLevel=1,active=0,timer=null;
+    function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(progress))}
+    function unlocked(id){if(id===1)return true;return progress.completedLevels.includes(id-1)}
+    function renderLevels(){levelsEl.innerHTML='';LEVELS.forEach(l=>{const div=document.createElement('div');
+      div.className='level'+(unlocked(l.id)?'':' locked');div.innerHTML=`<div class="lock">${progress.completedLevels.includes(l.id)?'<span class="done">✓ Completed</span>':''}</div><h4>${l.name}</h4><div class="muted">${l.minutes} min • ${l.sections.length} sections</div><div class="pill">${l.sections.join(' • ')}</div><button ${unlocked(l.id)?'':'disabled'} data-id="${l.id}">Select</button>`;
+      div.querySelector('button')?.addEventListener('click',()=>{currentLevel=l.id;updateJourney()});levelsEl.appendChild(div);});}
+    function updateJourney(){const l=LEVELS.find(x=>x.id===currentLevel);journey.textContent=`Current: ${l.name} — ${l.minutes} minutes.`}
+    renderLevels();updateJourney();
+    function detectTopic(t){t=t.toLowerCase();for(const[k,ws]of Object.entries(KEYWORDS)){if(ws.some(w=>t.includes(w)))return k;}return 'guidance';}
+    function pickVerses(topic,min,max){const pool=VERSES[topic]||VERSES.guidance;return pool.slice(0,Math.min(max,pool.length));}
+    function makePrayer(lv,topic,verses,q){const L=LEVELS.find(l=>l.id===lv);const vList=verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n');
+      return `**Adoration**\nHeavenly Father, You are holy and faithful.\n\n**Thanksgiving**\nThank You for Your goodness and presence.\n\n**Petition**\nI bring this matter (${q||'my need'}) before You. Move in power and bring peace.\n\n**Scripture to Stand On**\n${vList}\n\nIn Jesus’ Name, amen.`;}
+    function markdown(md){return md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');}
+    function levelSec(lv){const m=LEVELS.find(x=>x.id===lv).minutes;return progress.testMode?Math.max(60,Math.round(m*3)):m*60;}
+    gen.onclick=()=>{const q=qEl.value.trim();const topic=detectTopic(q);const L=LEVELS.find(x=>x.id===currentLevel);
+      const verses=pickVerses(topic,L.verseMin,L.verseMax);const prayer=makePrayer(currentLevel,topic,verses,q);
+      pEl.style.display='block';pEl.innerHTML=markdown(prayer);start.style.display='inline-flex';finish.style.display='none';ring.classList.remove('live');active=0;timerText.textContent='Ready to begin.';}
+    start.onclick=()=>{clearInterval(timer);active=levelSec(currentLevel);ring.classList.add('live');timer=setInterval(()=>{active--;const m=Math.floor(active/60),s=String(active%60).padStart(2,'0');timerText.textContent=`Time left: ${m}:${s}`;if(active<=0){clearInterval(timer);ring.classList.remove('live');timerText.textContent='Session complete!';finish.style.display='inline-flex';}},1000);}
+    finish.onclick=()=>{if(!progress.completedLevels.includes(currentLevel)){progress.completedLevels.push(currentLevel);save();renderLevels();updateJourney();}finish.style.display='none';}
+    test.onchange=()=>{progress.testMode=test.checked;save();}
+  </script>
+</body>
+  </html>
+          
