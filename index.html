@@ -195,12 +195,7 @@
     function chunkMin(level){ return [0,3,5,5,6][level]; } // 10 paras per chunk
 
     // Default tones by level:
-    const DEFAULT_TONE_BY_LEVEL = {
-      1: 'gentle',
-      2: 'thanksgiving',
-      3: 'warfare',
-      4: 'intercession'
-    };
+    const DEFAULT_TONE_BY_LEVEL = { 1:'gentle', 2:'thanksgiving', 3:'warfare', 4:'intercession' };
 
     // Tone meta for card styling
     const TONE_META = {
@@ -218,12 +213,12 @@
     const TEST_SECONDS_PER_MIN = 5;
 
     // ================== STORAGE ==================
-    const STORAGE_KEY = 'watchWithMe.progress.v13';
+    const STORAGE_KEY = 'watchWithMe.progress.v14';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ================== SCRIPTURE POOLS (KJV snippets) ==================
+    // ================== SCRIPTURE POOLS ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -329,10 +324,92 @@
 
     // STATE
     let currentLevel = 1;
-    let session = null; // { level, topics, ctx, query, tone, selectedRefs:Set, verses:[], blocks:[{paras:string[]}] }
+    let session = null; // { level, topics, ctx, query, tone, selectedRefs:Set, verses:[], blocks:[{paras:string[]}] , usedPhrases:Set}
     let countdown = null;
     let activeSeconds = 0;
     let cumulativeSeconds = 0;
+
+    // ---------- Client-side anti-dup ----------
+    function norm(s=''){ return s.toLowerCase().replace(/[“”"’']/g,"'").replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim(); }
+    function lead2(s){ return norm(s).split(" ").slice(0,2).join(" "); }
+    function tri(tokens){ const out=[]; for(let i=0;i<tokens.length-2;i++) out.push(tokens.slice(i,i+3).join(" ")); return out; }
+    function jac(a,b){
+      const A=tri(norm(a).split(" ")), B=tri(norm(b).split(" "));
+      if(!A.length||!B.length) return 0;
+      const sA=new Set(A), sB=new Set(B); let inter=0;
+      for(const x of sA) if(sB.has(x)) inter++;
+      return inter/(sA.size+sB.size-inter);
+    }
+    function isNearDuplicate(a,b){ return jac(a,b)>=0.5 || lead2(a)===lead2(b); }
+    function dedupeParagraphs(arr){
+      const out=[]; const usedStarts=new Set();
+      for(const p of arr){
+        if(!p) continue;
+        if(out.some(x=>isNearDuplicate(x,p))) continue;
+        let lb=lead2(p);
+        if(usedStarts.has(lb)){
+          const openers=["Father,","Lord,","Gracious God,","Abba Father,","Holy One,"];
+          p = `${openers[Math.floor(Math.random()*openers.length)]} ${p}`;
+          lb=lead2(p);
+          if(usedStarts.has(lb)) continue;
+        }
+        usedStarts.add(lb);
+        out.push(p);
+      }
+      return out;
+    }
+
+    // ---------- Tone lines (variants; each used once max per session) ----------
+    const toneLines = {
+      intercession: [
+        "Remember mercy, and let Your compassion move swiftly on their behalf.",
+        "Let heaven’s help arrive like rain in dry ground; look upon this need and answer with power.",
+        "Stretch forth Your hand to heal and to save; let Your name be glorified.",
+        "Bear this burden with us, Lord, and raise up helpers and encouragers in due season."
+      ],
+      warfare: [
+        "By the authority of Jesus, we renounce every lie and break agreement with fear.",
+        "Let truth expose and dismantle every scheme of darkness.",
+        "Clothe us with the whole armour of God; make us steadfast and courageous.",
+        "Let every stronghold collapse, and let the light of Christ prevail."
+      ],
+      thanksgiving: [
+        "We remember former mercies and give thanks for what You’ve already done.",
+        "You have carried us this far; gratitude rises like incense before You.",
+        "Thank You for daily bread, quiet miracles, and the strength to keep going.",
+        "From the small kindness to the great rescue, we bless Your holy name."
+      ],
+      gentle: [
+        "Let Your kindness disarm every anxious thought and teach us to breathe again.",
+        "Speak softly to the weary places and revive hope within.",
+        "Like still waters, let Your peace restore the soul.",
+        "Hold us steady, and let Your nearness be our song in the night."
+      ],
+      lament: [
+        "Receive every honest tear and turn mourning into hope.",
+        "Sit with us in the valley, and speak comfort like sunlight after rain.",
+        "Gather the broken pieces and make something beautiful again.",
+        "Teach us to grieve with hope, for You are near to the brokenhearted."
+      ],
+      celebration: [
+        "Our hearts rise in praise—You have done great things.",
+        "Let joy ring out; Your goodness endures forever.",
+        "With gladness we declare Your faithfulness from age to age.",
+        "We rejoice in Your salvation and sing of Your mighty works."
+      ],
+      confession: [
+        "Search us and cleanse us; create in us a clean heart, O God.",
+        "We bring hidden faults to Your light; wash and renew us.",
+        "Teach us to love what You love and to turn from what harms the soul.",
+        "Restore joy where sin has stolen peace, and write truth on our hearts."
+      ],
+      guidance: [
+        "Grant a wise and understanding heart that delights in Your counsel.",
+        "Order our steps and establish them in Your Word.",
+        "Illuminate the path ahead and steady us in each decision.",
+        "Give discernment to sift noise from Your still, clear voice."
+      ]
+    };
 
     // UTILS
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
@@ -409,60 +486,6 @@
       wisdom:'Give me a wise and understanding heart that delights in Your counsel.',
       favor:'Surround me with favor as with a shield; open doors no one can shut.'
     };
-    const toneBoost = {
-      gentle:'Let my words be gentle and full of peace.',
-      intercession:'I stand in the gap and plead for mercy and breakthrough.',
-      warfare:'In Jesus’ authority I resist the enemy; let every stronghold fall.',
-      thanksgiving:'With gratitude, I recount Your goodness and faithfulness.',
-      lament:'You are near to the brokenhearted; receive my honest tears and comfort me.',
-      celebration:'My heart rejoices; magnify the Lord with me!',
-      confession:'Search me and cleanse me; create in me a clean heart, O God.',
-      guidance:'Grant clarity and a wise, understanding heart.'
-    };
-    function introParagraphs(level, topics, query, ctx, toneKey){
-      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
-      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
-      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
-      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
-      const boost = toneBoost[toneKey] ? ' ' + toneBoost[toneKey] : '';
-      const adoration = [
-        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
-        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
-        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
-      ];
-      const thanks = [
-        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
-        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
-      ];
-      const coreAsk = `I lift${who} before Your throne.${boost} ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`;
-      const arr = [];
-      arr.push(`${opener} ${adoration[0]}`);
-      if(level>1) arr.push(adoration[1]);
-      if(level>2) arr.push(adoration[2]);
-      arr.push(thanks[0]);
-      if(level>2) arr.push(thanks[1]);
-      arr.push(coreAsk);
-      if(toneKey==='warfare') arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
-      if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
-      return arr;
-    }
-    function generateParagraphs(count, level, topics, toneKey){
-      const result = [];
-      for(let i=0;i<count;i++){
-        let line = deepLines[Math.floor(Math.random()*deepLines.length)];
-        if(Math.random()<0.55 + (level*0.05)){
-          const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
-          if(flavors.length && Math.random()<0.7){
-            line += ' ' + flavors[Math.floor(Math.random()*flavors.length)];
-          }
-        }
-        if(toneBoost[toneKey] && Math.random()<0.4){
-          line += ' ' + toneBoost[toneKey];
-        }
-        result.push(line);
-      }
-      return result;
-    }
 
     // ====== AI GENERATION (optional) ======
     async function aiGenerateParagraphs({query, level, topics, previousText, tone, count=10}) {
@@ -499,7 +522,6 @@
         `;
         div.querySelector('button')?.addEventListener('click',()=>{
           currentLevel=l.id;
-          // Apply default tone for this level
           setTone(DEFAULT_TONE_BY_LEVEL[currentLevel]);
           cumulativeSeconds = 0;
           updateJourney();
@@ -570,7 +592,6 @@
       }
       renderLevels();
       if(currentLevel<4){ currentLevel += 1; }
-      // move tone to next level default
       setTone(DEFAULT_TONE_BY_LEVEL[currentLevel] || 'gentle');
       cumulativeSeconds = 0;
       updateJourney();
@@ -587,14 +608,79 @@
       toneEmoji.textContent = meta.emoji;
       toneText.textContent  = meta.text;
     }
-    toneEl.addEventListener('change',()=>{
-      setTone(toneEl.value);
-    });
+    toneEl.addEventListener('change',()=> setTone(toneEl.value));
+
+    // ===== Local paragraph builders (non-AI) =====
+    function introParagraphs(level, topics, query, ctx, toneKey, sess){
+      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
+      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
+      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
+      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
+      const adoration = [
+        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
+        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
+        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
+      ];
+      const thanks = [
+        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
+        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.'
+      ];
+
+      const arr = [];
+      arr.push(`${opener} ${adoration[0]}`);
+      if(level>1) arr.push(adoration[1]);
+      if(level>2) arr.push(adoration[2]);
+      arr.push(thanks[0]);
+      if(level>2) arr.push(thanks[1]);
+
+      // tone line (pick ONCE per session for intro)
+      const tlines = toneLines[toneKey] || [];
+      if(tlines.length){
+        const candidate = tlines.find(l=>!sess.usedPhrases.has(norm(l)));
+        if(candidate){ sess.usedPhrases.add(norm(candidate)); arr.push(candidate); }
+      }
+
+      arr.push(`I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`);
+
+      if(toneKey==='warfare' && level>=3){
+        arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
+      }
+      if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
+      return dedupeParagraphs(arr);
+    }
+
+    function generateParagraphs(count, level, topics, toneKey, sess){
+      const result = [];
+      for(let i=0;i<count;i++){
+        let line = deepLines[Math.floor(Math.random()*deepLines.length)];
+        if(Math.random()<0.55 + (level*0.05)){
+          const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
+          if(flavors.length && Math.random()<0.7){
+            const pick = flavors[Math.floor(Math.random()*flavors.length)];
+            if(!sess.usedPhrases.has(norm(pick))){
+              line += ' ' + pick;
+              sess.usedPhrases.add(norm(pick));
+            }
+          }
+        }
+        // sprinkle one tone line occasionally, but never repeat the same
+        const tlines = toneLines[toneKey] || [];
+        if(tlines.length && Math.random()<0.35){
+          const cand = tlines.find(l=>!sess.usedPhrases.has(norm(l)));
+          if(cand){
+            line += ' ' + cand;
+            sess.usedPhrases.add(norm(cand));
+          }
+        }
+        result.push(line);
+      }
+      return dedupeParagraphs(result);
+    }
 
     // ===== EVENTS =====
     testMode.addEventListener('change',()=>{progress.testMode = testMode.checked; save(); updateJourney();});
 
-    genBtn.addEventListener('click', async ()=>{
+    async function buildFirstBlock(){
       const query = queryEl.value.trim();
       const tone  = toneEl.value;
       const topics = detectTopics(query);
@@ -604,31 +690,38 @@
       const selectedRefs = new Set();
       const verses = pickVerses(topics, L.verseMin, L.verseMax, query, selectedRefs);
 
+      // session container
+      session = {
+        level: currentLevel,
+        topics, ctx, query, tone,
+        selectedRefs,
+        verses: verses.slice(0, L.verseMax),
+        blocks: [],
+        usedPhrases: new Set()
+      };
+
       let firstParas = [];
       if(document.getElementById('aiMode').checked){
         const ai = await aiGenerateParagraphs({query, level: currentLevel, topics, previousText: '', tone, count: 10});
         firstParas = ai.paragraphs || [];
+        // client-side cleanup/anti-dup (final pass)
+        firstParas = dedupeParagraphs(firstParas);
         if(Array.isArray(ai.scriptures)){
           ai.scriptures.forEach(s=>{
             if(s && s.ref && s.text && !selectedRefs.has(s.ref)){
-              verses.push({ref:s.ref, text:s.text});
+              session.verses.push({ref:s.ref, text:s.text});
               selectedRefs.add(s.ref);
             }
           });
         }
       }else{
-        const block0 = introParagraphs(currentLevel, topics, query, ctx, tone);
+        const block0 = introParagraphs(currentLevel, topics, query, ctx, tone, session);
         const needed = Math.max(0, 10 - block0.length);
-        const extras = generateParagraphs(needed, currentLevel, topics, tone);
-        firstParas = block0.concat(extras);
+        const extras = generateParagraphs(needed, currentLevel, topics, tone, session);
+        firstParas = dedupeParagraphs(block0.concat(extras));
       }
 
-      session = {
-        level: currentLevel,
-        topics, ctx, query, tone,
-        selectedRefs, verses: verses.slice(0, L.verseMax),
-        blocks:[{ paras:firstParas }]
-      };
+      session.blocks.push({ paras:firstParas });
 
       prayerEl.style.display='block';
       prayerEl.innerHTML = renderPrayerHTML(session);
@@ -638,7 +731,9 @@
       moreBtn.classList.remove('highlight');
 
       startChunkForLevel(currentLevel);
-    });
+    }
+
+    genBtn.addEventListener('click', buildFirstBlock);
 
     moreBtn.addEventListener('click', async ()=>{
       if(!session) return;
@@ -656,6 +751,11 @@
           count: 10
         });
         newParas = ai.paragraphs || [];
+        // De-dup vs. previous blocks too
+        const allExisting = session.blocks.flatMap(b=>b.paras);
+        newParas = newParas.filter(p => !allExisting.some(ep => isNearDuplicate(ep, p)));
+        newParas = dedupeParagraphs(newParas);
+
         if(Array.isArray(ai.scriptures)){
           for(const s of ai.scriptures){
             if(session.verses.length>=L.verseMax) break;
@@ -666,7 +766,10 @@
           }
         }
       }else{
-        newParas = generateParagraphs(10, session.level, session.topics, session.tone);
+        newParas = generateParagraphs(10, session.level, session.topics, session.tone, session);
+        const allExisting = session.blocks.flatMap(b=>b.paras);
+        newParas = newParas.filter(p => !allExisting.some(ep => isNearDuplicate(ep, p)));
+        newParas = dedupeParagraphs(newParas);
       }
 
       session.blocks.push({ paras:newParas });
@@ -687,7 +790,6 @@
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
       updateJourney();
-      // apply default tone on first load
       setTone(DEFAULT_TONE_BY_LEVEL[currentLevel] || 'gentle');
     }
     boot();
