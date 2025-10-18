@@ -6,7 +6,8 @@
   <title>Jesus said, Watch With Me</title>
   <style>
     :root{
-      --bg:#0b1220;--card:#111a2e;--ink:#e6ecff;--muted:#a8b3d1;--brand:#4ea8ff;--brand2:#9ad4ff;--good:#2ecc71;--highlight:#ffe66a;--ink-dark:#0b1220;
+      --bg:#0b1220;--card:#111a2e;--ink:#e6ecff;--muted:#a8b3d1;--brand:#4ea8ff;--brand2:#9ad4ff;
+      --good:#2ecc71;--highlight:#ffe66a;--ink-dark:#0b1220;
     }
     *{box-sizing:border-box}
     body{
@@ -69,11 +70,7 @@
     .btn.secondary{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,0.2)}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .btn:active{transform:scale(0.98)}
-    .btn.highlight{
-      background:var(--highlight);
-      color:var(--ink-dark);
-      border:1px solid rgba(0,0,0,.15)
-    }
+    .btn.highlight{background:var(--highlight);color:var(--ink-dark);border:1px solid rgba(0,0,0,.15)}
 
     .timer{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
     .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);outline:1px solid rgba(255,255,255,0.15)}
@@ -81,9 +78,17 @@
     .progress{font-size:12px;color:var(--muted)}
 
     .prayer{
-      white-space:pre-wrap;line-height:1.6;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
+      line-height:1.6;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
       border-radius:12px;padding:14px;margin-top:12px
     }
+    .prayer p{margin:0 0 12px 0;white-space:pre-wrap}
+    .divider{
+      text-align:center;margin:12px 0;color:var(--muted);letter-spacing:2px;opacity:.85;
+      user-select:none
+    }
+    .scriptures{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.2)}
+    .scriptures strong{display:block;margin-bottom:6px}
+    .scriptures li{margin:4px 0 0 18px}
 
     a{color:var(--brand2)}
   </style>
@@ -142,7 +147,7 @@
   </div>
 
   <script>
-    // ================== CONFIG ==================
+    // ================== LEVELS & DURATIONS ==================
     const LEVELS = [
       { id:1, name:'Level 1', targetMin:15, verseMin:2, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Petition'] },
       { id:2, name:'Level 2', targetMin:30, verseMin:3, verseMax:6, sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition'] },
@@ -150,19 +155,19 @@
       { id:4, name:'Level 4', targetMin:60, verseMin:6, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
 
-    // Per-level chunk durations (minutes)
-    function initialChunkMin(level){ return [0,3,4,5,6][level]; } // L1=3, L2=4, L3=5, L4=6
-    function moreChunkMin(level){    return [0,2,3,4,5][level]; } // L1=2, L2=3, L3=4, L4=5
+    // Per-level chunk duration (minutes) — 10 paragraphs per chunk
+    function chunkMin(level){ return [0,3,5,5,6][level]; } // L1=3, L2=5, L3=5, L4=6
 
     // Test mode (compress time)
-    const TEST_SECONDS_PER_MIN = 5; // 5s per "minute"
+    const TEST_SECONDS_PER_MIN = 5; // 5s per "minute" in demo mode
 
-    const STORAGE_KEY = 'watchWithMe.progress.v8';
+    // ================== STORAGE ==================
+    const STORAGE_KEY = 'watchWithMe.progress.v9';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ================== SCRIPTURES (KJV excerpts) ==================
+    // ================== SCRIPTURE POOLS (KJV excerpts) ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -225,7 +230,6 @@
              {ref:'Proverbs 3:4',text:'So shalt thou find favour and good understanding in the sight of God and man.'}]
     };
 
-    // ================== TOPIC KEYWORDS ==================
     const KEYWORDS = {
       healing:['heal','sick','illness','disease','pain','surgery','hospital','recovery','cancer','flu','injury','therapy'],
       anxiety:['anxiety','anxious','panic','worry','overwhelm','fearful','stress','restless','insomnia'],
@@ -264,12 +268,12 @@
 
     // ================== STATE ==================
     let currentLevel = 1;
-    let session = null; // { level, topics, ctx, query, selectedRefs:Set, verses:[], md }
+    let session = null; // { level, topics, ctx, query, selectedRefs:Set, verses:[], blocks:[{paras:string[]}] }
     let countdown = null;
     let activeSeconds = 0;
     let cumulativeSeconds = 0;
 
-    // ================== UTILITIES ==================
+    // ================== UTILS ==================
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
     function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
     function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
@@ -315,7 +319,83 @@
       return out;
     }
 
-    // ================== UI RENDER ==================
+    // ================== PRAYER TEXT GENERATION ==================
+    function introParagraphs(level, topics, query, ctx){
+      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
+      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
+      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
+      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
+
+      const adoration = [
+        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
+        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
+        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
+      ];
+      const thanks = [
+        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
+        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
+      ];
+      const coreAsk = `I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word.`;
+
+      const arr = [];
+      arr.push(`${opener} ${adoration[0]}`);
+      if(level>1) arr.push(adoration[1]);
+      if(level>2) arr.push(adoration[2]);
+      arr.push(thanks[0]);
+      if(level>2) arr.push(thanks[1]);
+      arr.push(coreAsk);
+      arr.push('Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.');
+      if(level>=3) arr.push('In Jesus’ authority, I resist every lie of the enemy and put on the whole armour of God.');
+      if(level>=3) arr.push('Your Word is life and light. Speak, Lord; I am listening with a willing spirit to obey.');
+      return arr; // 7–9 lines depending on level
+    }
+
+    const deepLines = [
+      'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
+      'Strengthen my inner being by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
+      'I surrender the parts of me that resist You. Form Christ in me—thought by thought, breath by breath.',
+      'Let Your love cast out fear. Fill this place with Your presence until my heart rests in Your promises.',
+      'As I wait on You, renew my strength. Lift my eyes above the storm to the One who speaks, “Peace, be still.”',
+      'Order my steps and confirm Your way with wisdom from above. Make my path straight and my heart steadfast.',
+      'Keep my heart tender and my spirit steadfast; make me quick to hear and quick to obey.',
+      'Make me a peacemaker and a witness of Christ—salt and light wherever I go.',
+      'Your grace is sufficient; Your strength is made perfect in weakness. I boast in You alone.',
+      'Establish my thoughts in Your truth. Let the words of my mouth and the meditation of my heart be acceptable to You.'
+    ];
+    const topicFlavor = {
+      healing:'Release Your healing virtue; make whole in body, soul, and spirit.',
+      anxiety:'Speak Your perfect peace over every racing thought and heavy breath.',
+      peace:'Let the peace of Christ rule in my heart and every room I enter.',
+      guidance:'Illuminate the next step and anchor me in Your counsel.',
+      provision:'Provide according to Your riches in glory and teach holy contentment.',
+      employment:'Establish the work of my hands and grant favor with those I serve.',
+      forgiveness:'Wash and restore me, that I may walk in a clean heart.',
+      protection:'Be a hedge around me; guard my going out and my coming in.',
+      grief:'Comfort me in sorrow and turn mourning into songs of hope.',
+      spiritual_warfare:'Disarm every scheme of the enemy and let truth prevail.',
+      salvation:'Draw hearts to Jesus; open the door of faith and breathe new life.',
+      purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
+      wisdom:'Give me a wise and understanding heart that delights in Your counsel.',
+      favor:'Surround me with favor as with a shield; open doors no one can shut.'
+    };
+
+    function generateParagraphs(count, level, topics){
+      // level scales the chance of “flavor” add-ons
+      const result = [];
+      for(let i=0;i<count;i++){
+        let line = deepLines[Math.floor(Math.random()*deepLines.length)];
+        if(Math.random()<0.55 + (level*0.05)){ // more “power” at higher levels
+          const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
+          if(flavors.length && Math.random()<0.7){
+            line += ' ' + flavors[Math.floor(Math.random()*flavors.length)];
+          }
+        }
+        result.push(line);
+      }
+      return result;
+    }
+
+    // ================== RENDER ==================
     function renderLevels(){
       levelsEl.innerHTML='';
       LEVELS.forEach(l=>{
@@ -330,8 +410,7 @@
         `;
         div.querySelector('button')?.addEventListener('click',()=>{
           currentLevel=l.id;
-          // Reset level progress if the user manually changes level
-          cumulativeSeconds = 0;
+          cumulativeSeconds = 0; // reset visible progress if user switches
           updateJourney();
         });
         levelsEl.appendChild(div);
@@ -341,115 +420,37 @@
       const L=LEVELS.find(x=>x.id===currentLevel);
       const targ=targetSecondsFor(currentLevel);
       levelProgress.textContent = cumulativeSeconds>0 ? `Progress this level: ${fmt(cumulativeSeconds)} / ${fmt(targ)}` : '';
-      journeyEl.textContent = `Current: ${L.name} — target ${L.targetMin} minutes. Press “More Prayer” to continue until complete.`;
+      journeyEl.textContent = `Current: ${L.name} — target ${L.targetMin} minutes. Each chunk adds 10 new prayer lines.`;
     }
 
-    function markdownToHTML(md){
-      return md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
+    function renderPrayerHTML(sess){
+      // Flatten blocks into paragraphs with dividers; then scriptures; then closing
+      const allParas = [];
+      sess.blocks.forEach((block, idx)=>{
+        if(idx>0) allParas.push('<div class="divider">─── ✝ ───</div>');
+        block.paras.forEach(p=> allParas.push(`<p>${escapeHTML(p)}</p>`));
+      });
+      // Scriptures
+      const scriptLis = sess.verses.map(v=>`<li><em>${escapeHTML(v.ref)}</em> — ${escapeHTML(v.text)}</li>`).join('');
+      const scriptures =
+        `<div class="scriptures"><strong>Scripture to Stand On (KJV)</strong><ul>${scriptLis}</ul></div>`;
+      // Close
+      const closing = `<p><strong>In Jesus’ Name, amen.</strong></p>`;
+      return allParas.join('') + scriptures + closing;
     }
 
-    // ================== PRAYER BUILDERS ==================
-    function basePrayer(level, topics, verses, query, ctx){
-      const L=LEVELS.find(l=>l.id===level);
-      const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
-      const who = ctx?.targetText ? ` for ${ctx.targetText}` : '';
-      const topicNames=topics.map(t=>t.replace('_',' ')).join(' & ');
-      const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
+    function escapeHTML(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-      const paragraphs = [];
-      const adoration = [
-        'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
-        'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
-        'You are near to the brokenhearted; Your faithfulness surrounds me like a shield.'
-      ];
-      const thanks = [
-        'Thank You for hearing me when I call. Thank You for the cross, the empty tomb, and the gift of the Holy Spirit.',
-        'Thank You for daily mercies and new strength. Your goodness and mercy follow me.',
-      ];
-      paragraphs.push(`${opener} ${adoration.slice(0,1+Math.min(level-1,2)).join(' ')}`);
-      paragraphs.push(thanks.slice(0,1+Math.min(level-1,1)).join(' '));
-
-      if(L.sections.includes('Intercession') || L.sections.includes('Strategic Intercession')){
-        paragraphs.push(`I lift${who} before Your throne. ${topicLine} Move in power for Your glory. Bring breakthrough, healing, guidance, and peace according to Your Word. Let Your kingdom come and Your will be done in every detail.`);
-      } else {
-        paragraphs.push(`${topicLine} I ask for Your wisdom, strength, and peace. Lead me in Your paths of righteousness for Your Name’s sake. Establish my thoughts and steady my heart.`);
-      }
-
-      if(L.sections.includes('Word Meditation')){
-        paragraphs.push(`Your Word is life and light. Write Your truth on my heart and renew my mind. Speak, Lord; I am listening with a willing spirit to obey.`);
-      }
-      if(L.sections.includes('Warfare')){
-        paragraphs.push(`In Jesus’ authority, I resist every lie of the enemy. I put on the whole armour of God and cast down imaginations that rise against the knowledge of God. Let every stronghold fall by the power of the cross.`);
-      }
-      paragraphs.push(`Father, I trust You with this situation. Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.`);
-
-      const scriptureBlock = `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
-      const closing = 'In Jesus’ Name, amen.';
-
-      return [...paragraphs, scriptureBlock, closing].join('\n\n');
-    }
-
-    function continuation(level, topics){
-      const baseLines = [
-        'Teach my heart to lean in and listen. Quiet every anxious thought and let Your nearness be my peace.',
-        'Strengthen my inner being by Your Spirit. Deepen my trust, purify my motives, and align me with Your will.',
-        'I surrender the parts of me that resist You. Form Christ in me—thought by thought, breath by breath.',
-        'Let Your love cast out fear. Fill this place with Your presence until my heart rests in Your promises.',
-        'As I wait on You, renew my strength. Lift my eyes above the storm to the One who speaks, “Peace, be still.”',
-        'Order my steps and confirm Your way with wisdom from above. Make my path straight and my heart steadfast.'
-      ];
-      const topicFlavor = {
-        healing:'Release Your healing virtue; make whole in body, soul, and spirit.',
-        anxiety:'Speak Your perfect peace over every racing thought and heavy breath.',
-        peace:'Let the peace of Christ rule in my heart and every room I enter.',
-        guidance:'Illuminate the next step and anchor me in Your counsel.',
-        provision:'Provide according to Your riches in glory and teach holy contentment.',
-        employment:'Establish the work of my hands and grant favor with those I serve.',
-        forgiveness:'Wash and restore me, that I may walk in a clean heart.',
-        protection:'Be a hedge around me; guard my going out and my coming in.',
-        grief:'Comfort me in sorrow and turn mourning into songs of hope.',
-        spiritual_warfare:'Disarm every scheme of the enemy and let truth prevail.',
-        salvation:'Draw hearts to Jesus; open the door of faith and breathe new life.',
-        purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
-        wisdom:'Give me a wise and understanding heart that delights in Your counsel.'
-      };
-      const countByLevel = {1:2, 2:3, 3:3, 4:4}; // more deepening lines at higher levels
-      const n = countByLevel[level] || 2;
-      let out = [];
-      for(let i=0;i<n;i++){ out.push(baseLines[Math.floor(Math.random()*baseLines.length)]); }
-      const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
-      if(flavors.length) out.push(flavors[Math.floor(Math.random()*flavors.length)]);
-      return out.join(' ');
-    }
-
-    function appendPrayer(md, extParagraph, verses){
-      // Insert extension(s) before Scripture block (keep growing), always keep one closing at the end.
-      const marker = '**Scripture to Stand On (KJV)**';
-      const idx = md.indexOf(marker);
-      if(idx === -1){
-        // No scripture section yet
-        return md + '\n\n' + extParagraph + '\n\n' +
-          `${marker}\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}` +
-          `\n\nIn Jesus’ Name, amen.`;
-      }
-      // before marker
-      const head = md.slice(0, idx).trim();
-      // rebuild scripture + closing fresh (so verse additions show)
-      const newScript = `${marker}\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
-      return [head, extParagraph, newScript, 'In Jesus’ Name, amen.'].join('\n\n');
-    }
-
-    // ================== TIMERS & PROGRESSION ==================
-    function startChunkForLevel(level, kind){ // 'initial' | 'more'
-      const mins = kind==='initial' ? initialChunkMin(level) : moreChunkMin(level);
+    // ================== TIMER & PROGRESSION ==================
+    function startChunkForLevel(level){
+      const mins = chunkMin(level);
       startChunk(secondsForMinutes(mins));
     }
-
     function startChunk(seconds){
       clearInterval(countdown);
       activeSeconds = seconds;
       ring.classList.add('live');
-      moreBtn.classList.remove('highlight'); // remove highlight when a chunk is running
+      moreBtn.classList.remove('highlight');
       updateTimerText();
 
       countdown = setInterval(()=>{
@@ -463,19 +464,16 @@
           clearInterval(countdown);
           ring.classList.remove('live');
           timerText.textContent = 'Chunk complete. Press “More Prayer” to continue.';
-          // visually prompt the user to continue
           moreBtn.disabled = false;
-          moreBtn.classList.add('highlight'); // yellow highlight
+          moreBtn.classList.add('highlight'); // guide user to continue
         }
       },1000);
     }
-
     function updateTimerText(){
       const targ = targetSecondsFor(currentLevel);
       timerText.textContent = activeSeconds>0 ? `Time remaining: ${fmt(activeSeconds)}` : 'No session active.';
       levelProgress.textContent = `Progress this level: ${fmt(cumulativeSeconds)} / ${fmt(targ)}`;
     }
-
     function completeLevel(){
       clearInterval(countdown);
       ring.classList.remove('live');
@@ -502,52 +500,66 @@
       const ctx    = extractContext(query);
       const L      = LEVELS.find(l=>l.id===currentLevel);
 
+      // Select congruent verses
       const selectedRefs = new Set();
       const verses = pickVerses(topics, L.verseMin, L.verseMax, query, selectedRefs);
 
-      let md = basePrayer(currentLevel, topics, verses, query, ctx);
+      // Build first block: intro (7-9) + extra to reach 10
+      const block0 = introParagraphs(currentLevel, topics, query, ctx);
+      const needed = Math.max(0, 10 - block0.length);
+      const extras = generateParagraphs(needed, currentLevel, topics);
+      const firstParas = block0.concat(extras);
+
+      // Session
+      session = {
+        level: currentLevel,
+        topics, ctx, query,
+        selectedRefs, verses:[...verses],
+        blocks:[{ paras:firstParas }]
+      };
+
+      // Render
       prayerEl.style.display='block';
-      prayerEl.innerHTML = markdownToHTML(md);
+      prayerEl.innerHTML = renderPrayerHTML(session);
 
-      session = { level: currentLevel, topics, ctx, query, selectedRefs, verses:[...verses], md };
-
+      // Controls
       moreBtn.style.display='inline-block';
       moreBtn.disabled = false;
       moreBtn.classList.remove('highlight');
 
-      // start initial chunk for this level
-      startChunkForLevel(currentLevel,'initial');
+      // Start chunk
+      startChunkForLevel(currentLevel);
     });
 
     moreBtn.addEventListener('click', ()=>{
       if(!session) return;
       const L = LEVELS.find(l=>l.id===session.level);
 
-      // extend with multiple paragraphs (level-scaled)
-      const ext = continuation(session.level, session.topics);
+      // Add +10 new paragraphs in a new block
+      const newBlock = { paras: generateParagraphs(10, session.level, session.topics) };
+      session.blocks.push(newBlock);
 
-      // optionally add exactly one new verse (if under cap)
+      // Optionally add one new verse per chunk until cap
       if(session.verses.length < L.verseMax){
         const extra = pickVerses(session.topics, session.verses.length+1, session.verses.length+1, session.query, session.selectedRefs);
         if(extra.length){ session.verses.push(extra[extra.length-1]); }
       }
 
-      session.md = appendPrayer(session.md, ext, session.verses);
-      prayerEl.innerHTML = markdownToHTML(session.md);
+      // Re-render
+      prayerEl.innerHTML = renderPrayerHTML(session);
 
-      // start a fresh "more" chunk and remove highlight
+      // Restart chunk
       moreBtn.classList.remove('highlight');
-      startChunkForLevel(session.level,'more');
+      startChunkForLevel(session.level);
     });
 
     // ================== BOOT ==================
-    function renderApp(){
-      // Clean invalid ids
+    function boot(){
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
       updateJourney();
     }
-    renderApp();
+    boot();
   </script>
 </body>
 </html>
