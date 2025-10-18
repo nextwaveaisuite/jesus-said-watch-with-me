@@ -6,7 +6,7 @@
   <title>Jesus said, Watch With Me</title>
   <style>
     :root{
-      --bg:#0b1220;--card:#111a2e;--ink:#e6ecff;--muted:#a8b3d1;--brand:#4ea8ff;--brand2:#9ad4ff;--good:#2ecc71;
+      --bg:#0b1220;--card:#111a2e;--ink:#e6ecff;--muted:#a8b3d1;--brand:#4ea8ff;--brand2:#9ad4ff;--good:#2ecc71;--highlight:#ffe66a;--ink-dark:#0b1220;
     }
     *{box-sizing:border-box}
     body{
@@ -64,10 +64,16 @@
     }
     .btn{
       padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));
-      border:none;color:#06101d;font-weight:800;cursor:pointer
+      border:none;color:#06101d;font-weight:800;cursor:pointer;transition:transform .05s ease;
     }
     .btn.secondary{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,0.2)}
     .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn:active{transform:scale(0.98)}
+    .btn.highlight{
+      background:var(--highlight);
+      color:var(--ink-dark);
+      border:1px solid rgba(0,0,0,.15)
+    }
 
     .timer{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
     .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);outline:1px solid rgba(255,255,255,0.15)}
@@ -136,7 +142,7 @@
   </div>
 
   <script>
-    // ================== CONFIG (LEVELS & DURATIONS) ==================
+    // ================== CONFIG ==================
     const LEVELS = [
       { id:1, name:'Level 1', targetMin:15, verseMin:2, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Petition'] },
       { id:2, name:'Level 2', targetMin:30, verseMin:3, verseMax:6, sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition'] },
@@ -144,19 +150,19 @@
       { id:4, name:'Level 4', targetMin:60, verseMin:6, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
 
-    // Level-based chunk durations (minutes)
+    // Per-level chunk durations (minutes)
     function initialChunkMin(level){ return [0,3,4,5,6][level]; } // L1=3, L2=4, L3=5, L4=6
     function moreChunkMin(level){    return [0,2,3,4,5][level]; } // L1=2, L2=3, L3=4, L4=5
 
     // Test mode (compress time)
-    const TEST_SECONDS_PER_MIN = 5; // 5 seconds per "minute" for demos
+    const TEST_SECONDS_PER_MIN = 5; // 5s per "minute"
 
-    const STORAGE_KEY = 'watchWithMe.progress.v7';
+    const STORAGE_KEY = 'watchWithMe.progress.v8';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ================== SCRIPTURE POOLS (KJV excerpts) ==================
+    // ================== SCRIPTURES (KJV excerpts) ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -323,7 +329,10 @@
           <button ${unlocked(l.id)?'':'disabled'} data-id="${l.id}">Select</button>
         `;
         div.querySelector('button')?.addEventListener('click',()=>{
-          currentLevel=l.id; updateJourney();
+          currentLevel=l.id;
+          // Reset level progress if the user manually changes level
+          cumulativeSeconds = 0;
+          updateJourney();
         });
         levelsEl.appendChild(div);
       });
@@ -375,7 +384,7 @@
       paragraphs.push(`Father, I trust You with this situation. Guard my heart and mind with Your peace. Teach me to abide, to wait, and to walk by faith and not by sight.`);
 
       const scriptureBlock = `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
-      const closing = ['In Jesus’ Name, amen.','Through Jesus Christ our Lord, amen.','In the mighty Name of Jesus, amen.'][Math.floor(Math.random()*3)];
+      const closing = 'In Jesus’ Name, amen.';
 
       return [...paragraphs, scriptureBlock, closing].join('\n\n');
     }
@@ -404,8 +413,8 @@
         purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
         wisdom:'Give me a wise and understanding heart that delights in Your counsel.'
       };
-      const countByLevel = {1:1, 2:2, 3:2, 4:3}; // more deepening lines at higher levels
-      const n = countByLevel[level] || 1;
+      const countByLevel = {1:2, 2:3, 3:3, 4:4}; // more deepening lines at higher levels
+      const n = countByLevel[level] || 2;
       let out = [];
       for(let i=0;i<n;i++){ out.push(baseLines[Math.floor(Math.random()*baseLines.length)]); }
       const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
@@ -414,17 +423,20 @@
     }
 
     function appendPrayer(md, extParagraph, verses){
-      // Insert extension before Scripture block, keep Scriptures updated, keep single closing.
-      const parts = md.split('**Scripture to Stand On (KJV)**');
-      if(parts.length===1){
+      // Insert extension(s) before Scripture block (keep growing), always keep one closing at the end.
+      const marker = '**Scripture to Stand On (KJV)**';
+      const idx = md.indexOf(marker);
+      if(idx === -1){
+        // No scripture section yet
         return md + '\n\n' + extParagraph + '\n\n' +
-          `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}` +
+          `${marker}\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}` +
           `\n\nIn Jesus’ Name, amen.`;
-      } else {
-        const head = parts[0].trim();
-        const newScript = `**Scripture to Stand On (KJV)**\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
-        return [head, extParagraph, newScript, 'In Jesus’ Name, amen.'].join('\n\n');
       }
+      // before marker
+      const head = md.slice(0, idx).trim();
+      // rebuild scripture + closing fresh (so verse additions show)
+      const newScript = `${marker}\n${verses.map(v=>`• ${v.ref} — ${v.text}`).join('\n')}`;
+      return [head, extParagraph, newScript, 'In Jesus’ Name, amen.'].join('\n\n');
     }
 
     // ================== TIMERS & PROGRESSION ==================
@@ -437,6 +449,7 @@
       clearInterval(countdown);
       activeSeconds = seconds;
       ring.classList.add('live');
+      moreBtn.classList.remove('highlight'); // remove highlight when a chunk is running
       updateTimerText();
 
       countdown = setInterval(()=>{
@@ -450,6 +463,9 @@
           clearInterval(countdown);
           ring.classList.remove('live');
           timerText.textContent = 'Chunk complete. Press “More Prayer” to continue.';
+          // visually prompt the user to continue
+          moreBtn.disabled = false;
+          moreBtn.classList.add('highlight'); // yellow highlight
         }
       },1000);
     }
@@ -463,6 +479,7 @@
     function completeLevel(){
       clearInterval(countdown);
       ring.classList.remove('live');
+      moreBtn.classList.remove('highlight');
       const L = LEVELS.find(l=>l.id===currentLevel);
       timerText.textContent = `${L.name} complete. Next level unlocked.`;
       if(!progress.completedLevels.includes(currentLevel)){
@@ -494,9 +511,11 @@
 
       session = { level: currentLevel, topics, ctx, query, selectedRefs, verses:[...verses], md };
 
-      // enable “More Prayer” and start the initial chunk
       moreBtn.style.display='inline-block';
       moreBtn.disabled = false;
+      moreBtn.classList.remove('highlight');
+
+      // start initial chunk for this level
       startChunkForLevel(currentLevel,'initial');
     });
 
@@ -504,27 +523,31 @@
       if(!session) return;
       const L = LEVELS.find(l=>l.id===session.level);
 
-      // extend prayer content
+      // extend with multiple paragraphs (level-scaled)
       const ext = continuation(session.level, session.topics);
+
+      // optionally add exactly one new verse (if under cap)
       if(session.verses.length < L.verseMax){
         const extra = pickVerses(session.topics, session.verses.length+1, session.verses.length+1, session.query, session.selectedRefs);
         if(extra.length){ session.verses.push(extra[extra.length-1]); }
       }
+
       session.md = appendPrayer(session.md, ext, session.verses);
       prayerEl.innerHTML = markdownToHTML(session.md);
 
-      // start a new “more” chunk for this level
+      // start a fresh "more" chunk and remove highlight
+      moreBtn.classList.remove('highlight');
       startChunkForLevel(session.level,'more');
     });
 
     // ================== BOOT ==================
-    function boot(){
-      // sanitize stored ids
+    function renderApp(){
+      // Clean invalid ids
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
       updateJourney();
     }
-    boot();
+    renderApp();
   </script>
 </body>
 </html>
