@@ -20,49 +20,65 @@
     .title{font-weight:800;letter-spacing:0.2px;font-size:clamp(1.2rem,3vw,1.8rem);}
     .subtitle{color:var(--muted);font-size:0.95rem}
     .badge{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#08121e;padding:6px 10px;border-radius:999px;font-weight:700}
+
     .grid{display:grid;grid-template-columns:1fr;gap:16px}
     @media(min-width:860px){.grid{grid-template-columns:2fr 1fr}}
 
-    .card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0));
-      border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(6px);
-      border-radius:16px;padding:16px}
+    .card{
+      background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0));
+      border:1px solid rgba(255,255,255,0.08);
+      backdrop-filter:blur(6px);
+      border-radius:16px;
+      padding:16px
+    }
     h2,h3{margin:0 0 8px 0}
     p{margin:0 0 10px 0}
-    small,.muted{color:var(--muted)}
+    .muted{color:var(--muted)}
 
-    .lord blockquote{margin:8px 0;padding:12px 14px;border-left:3px solid var(--brand);
-      background:rgba(255,255,255,0.03);border-radius:8px}
+    .lord blockquote{
+      margin:8px 0;padding:12px 14px;border-left:3px solid var(--brand);
+      background:rgba(255,255,255,0.03);border-radius:8px
+    }
 
     .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media(min-width:720px){.levels{grid-template-columns:repeat(4,1fr)}}
-    .level{padding:14px;border-radius:14px;background:linear-gradient(180deg,#0f1b31,#0e1627);
-      border:1px solid rgba(255,255,255,0.08);position:relative}
+    .level{
+      padding:14px;border-radius:14px;background:linear-gradient(180deg,#0f1b31,#0e1627);
+      border:1px solid rgba(255,255,255,0.08);position:relative
+    }
     .level h4{margin:0 0 6px 0}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
-      font-size:12px;background:rgba(255,255,255,0.06)}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;background:rgba(255,255,255,0.06)}
     .lock{position:absolute;top:10px;right:10px;font-size:12px;color:var(--muted)}
-    .level button{margin-top:10px;width:100%;padding:10px;border-radius:10px;
-      background:linear-gradient(90deg,var(--brand),var(--brand2));border:none;color:#05101d;
-      font-weight:800;cursor:pointer}
-    .level.locked{opacity:0.55;filter:saturate(.6)}
     .done{color:var(--good);font-weight:700}
+    .level button{
+      margin-top:10px;width:100%;padding:10px;border-radius:10px;
+      background:linear-gradient(90deg,var(--brand),var(--brand2));
+      border:none;color:#05101d;font-weight:800;cursor:pointer
+    }
+    .level.locked{opacity:0.55;filter:saturate(.6)}
 
     .searchbar{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
-    .searchbar input{flex:1 1 360px;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
-      color:var(--ink);padding:10px;border-radius:10px}
-    .btn{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));
-      border:none;color:#06101d;font-weight:800;cursor:pointer}
+    .searchbar input{
+      flex:1 1 360px;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
+      color:var(--ink);padding:10px;border-radius:10px
+    }
+    .btn{
+      padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--brand),var(--brand2));
+      border:none;color:#06101d;font-weight:800;cursor:pointer
+    }
     .btn.secondary{background:transparent;color:var(--ink);border:1px solid rgba(255,255,255,0.2)}
     .btn:disabled{opacity:.6;cursor:not-allowed}
 
     .timer{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
-    .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);
-      outline:1px solid rgba(255,255,255,0.15)}
+    .ring{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.08);outline:1px solid rgba(255,255,255,0.15)}
     .ring.live{background:var(--good)}
     .progress{font-size:12px;color:var(--muted)}
 
-    .prayer{white-space:pre-wrap;line-height:1.6;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
-      border-radius:12px;padding:14px;margin-top:12px}
+    .prayer{
+      white-space:pre-wrap;line-height:1.6;background:#0c1426;border:1px solid rgba(255,255,255,0.1);
+      border-radius:12px;padding:14px;margin-top:12px
+    }
+
     a{color:var(--brand2)}
   </style>
 </head>
@@ -120,7 +136,7 @@
   </div>
 
   <script>
-    // ================== CONFIG ==================
+    // ================== CONFIG (LEVELS & DURATIONS) ==================
     const LEVELS = [
       { id:1, name:'Level 1', targetMin:15, verseMin:2, verseMax:5, sections:['Adoration','Confession','Thanksgiving','Petition'] },
       { id:2, name:'Level 2', targetMin:30, verseMin:3, verseMax:6, sections:['Adoration','Confession','Thanksgiving','Intercession','Listening','Petition'] },
@@ -128,19 +144,19 @@
       { id:4, name:'Level 4', targetMin:60, verseMin:6, verseMax:10, sections:['Extended Worship','Word Meditation','Strategic Intercession','Warfare','Listening','Declarations','Blessing & Commission','Petition'] },
     ];
 
-    // level-based chunk durations (minutes)
+    // Level-based chunk durations (minutes)
     function initialChunkMin(level){ return [0,3,4,5,6][level]; } // L1=3, L2=4, L3=5, L4=6
     function moreChunkMin(level){    return [0,2,3,4,5][level]; } // L1=2, L2=3, L3=4, L4=5
 
-    // test mode compression: seconds per "real minute"
-    const TEST_SECONDS_PER_MIN = 5; // demo speed (5s/min)
+    // Test mode (compress time)
+    const TEST_SECONDS_PER_MIN = 5; // 5 seconds per "minute" for demos
 
-    const STORAGE_KEY = 'watchWithMe.progress.v6';
+    const STORAGE_KEY = 'watchWithMe.progress.v7';
     let progress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(!progress.completedLevels) progress.completedLevels = [];
     if(progress.testMode===undefined) progress.testMode = false;
 
-    // ================== SCRIPTURES (KJV excerpts) ==================
+    // ================== SCRIPTURE POOLS (KJV excerpts) ==================
     const VERSES = {
       healing:[{ref:'James 5:14-15',text:'Is any sick among you? ... And the prayer of faith shall save the sick...'},
                {ref:'Psalm 103:2-3',text:'Bless the LORD... who healeth all thy diseases;'},
@@ -203,6 +219,7 @@
              {ref:'Proverbs 3:4',text:'So shalt thou find favour and good understanding in the sight of God and man.'}]
     };
 
+    // ================== TOPIC KEYWORDS ==================
     const KEYWORDS = {
       healing:['heal','sick','illness','disease','pain','surgery','hospital','recovery','cancer','flu','injury','therapy'],
       anxiety:['anxiety','anxious','panic','worry','overwhelm','fearful','stress','restless','insomnia'],
@@ -225,7 +242,7 @@
       favor:['favor','favour','opportunity','open door','acceptance']
     };
 
-    // ================== DOM ==================
+    // ================== DOM HOOKS ==================
     const levelsEl = document.getElementById('levels');
     const journeyEl = document.getElementById('journey');
     const queryEl   = document.getElementById('query');
@@ -241,12 +258,12 @@
 
     // ================== STATE ==================
     let currentLevel = 1;
-    let activeSeconds = 0;
-    let countdown = null;
-    let cumulativeSeconds = 0;
     let session = null; // { level, topics, ctx, query, selectedRefs:Set, verses:[], md }
+    let countdown = null;
+    let activeSeconds = 0;
+    let cumulativeSeconds = 0;
 
-    // ================== HELPERS ==================
+    // ================== UTILITIES ==================
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
     function unlocked(id){ return id===1 || progress.completedLevels.includes(id-1); }
     function secondsForMinutes(min){ return min * (progress.testMode ? TEST_SECONDS_PER_MIN : 60); }
@@ -292,6 +309,7 @@
       return out;
     }
 
+    // ================== UI RENDER ==================
     function renderLevels(){
       levelsEl.innerHTML='';
       LEVELS.forEach(l=>{
@@ -321,7 +339,7 @@
       return md.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
     }
 
-    // ========= Prayer builders =========
+    // ================== PRAYER BUILDERS ==================
     function basePrayer(level, topics, verses, query, ctx){
       const L=LEVELS.find(l=>l.id===level);
       const opener=['Heavenly Father,','Father in heaven,','Lord Jesus,','Gracious God,','Abba Father,'][Math.floor(Math.random()*5)];
@@ -330,7 +348,6 @@
       const topicLine = query?`Concerning ${topicNames}${who}: ${query}`:`You know the need upon my heart today.`;
 
       const paragraphs = [];
-      // richer worship as level rises
       const adoration = [
         'You are holy, righteous, and faithful. Your Name is above every name. You are my refuge and fortress, my light and salvation.',
         'You are gracious and merciful, slow to anger and abounding in steadfast love. You reign with wisdom and power.',
@@ -387,18 +404,17 @@
         purpose:'Clarify my calling and root me in Your assignments with holy boldness.',
         wisdom:'Give me a wise and understanding heart that delights in Your counsel.'
       };
-      const countByLevel = {1:1, 2:2, 3:2, 4:3}; // more lines at higher levels
+      const countByLevel = {1:1, 2:2, 3:2, 4:3}; // more deepening lines at higher levels
       const n = countByLevel[level] || 1;
       let out = [];
-      for(let i=0;i<n;i++){
-        out.push(baseLines[Math.floor(Math.random()*baseLines.length)]);
-      }
+      for(let i=0;i<n;i++){ out.push(baseLines[Math.floor(Math.random()*baseLines.length)]); }
       const flavors = topics.map(t=>topicFlavor[t]).filter(Boolean);
       if(flavors.length) out.push(flavors[Math.floor(Math.random()*flavors.length)]);
       return out.join(' ');
     }
 
     function appendPrayer(md, extParagraph, verses){
+      // Insert extension before Scripture block, keep Scriptures updated, keep single closing.
       const parts = md.split('**Scripture to Stand On (KJV)**');
       if(parts.length===1){
         return md + '\n\n' + extParagraph + '\n\n' +
@@ -411,12 +427,8 @@
       }
     }
 
-    // ========= TIMER & PROGRESSION =========
-    let countdown = null;
-    let activeSeconds = 0;
-    let cumulativeSeconds = 0;
-
-    function startChunkForLevel(level, kind){ // kind: 'initial' | 'more'
+    // ================== TIMERS & PROGRESSION ==================
+    function startChunkForLevel(level, kind){ // 'initial' | 'more'
       const mins = kind==='initial' ? initialChunkMin(level) : moreChunkMin(level);
       startChunk(secondsForMinutes(mins));
     }
@@ -464,10 +476,8 @@
       genBtn.disabled  = false;
     }
 
-    // ========= EVENTS =========
-    document.getElementById('testMode').addEventListener('change',()=>{
-      progress.testMode = testMode.checked; save(); updateJourney();
-    });
+    // ================== EVENTS ==================
+    testMode.addEventListener('change',()=>{progress.testMode = testMode.checked; save(); updateJourney();});
 
     genBtn.addEventListener('click', ()=>{
       const query = queryEl.value.trim();
@@ -483,10 +493,10 @@
       prayerEl.innerHTML = markdownToHTML(md);
 
       session = { level: currentLevel, topics, ctx, query, selectedRefs, verses:[...verses], md };
+
+      // enable “More Prayer” and start the initial chunk
       moreBtn.style.display='inline-block';
       moreBtn.disabled = false;
-
-      // start initial level-sized chunk
       startChunkForLevel(currentLevel,'initial');
     });
 
@@ -503,13 +513,13 @@
       session.md = appendPrayer(session.md, ext, session.verses);
       prayerEl.innerHTML = markdownToHTML(session.md);
 
-      // start a new "more" chunk for this level
+      // start a new “more” chunk for this level
       startChunkForLevel(session.level,'more');
     });
 
-    // ========= INIT =========
+    // ================== BOOT ==================
     function boot(){
-      // clean any invalid stored ids
+      // sanitize stored ids
       progress.completedLevels = progress.completedLevels.filter(id=>LEVELS.some(l=>l.id===id));
       renderLevels();
       updateJourney();
